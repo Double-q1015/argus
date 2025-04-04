@@ -22,7 +22,7 @@ logger.info(f"Python path: {sys.path}")
 
 from app.models.user import User
 from app.core.auth import pwd_context
-from app.models.analysis import Task, TaskStatus, AnalysisConfig, TaskCondition, SampleAnalysis, AnalysisResult
+from app.models.analysis import Task, TaskStatus, AnalysisConfig, TaskCondition, SampleAnalysis, AnalysisResult, SampleAnalysisStatus
 from app.models.sample import Sample
 from app.services.task_service import TaskService
 from app.services.analysis_service import AnalysisService
@@ -48,7 +48,8 @@ async def init_database():
             TaskCondition,
             AnalysisConfig,
             SampleAnalysis,
-            AnalysisResult
+            AnalysisResult,
+            SampleAnalysisStatus
         ]
     )
     logger.info("Database initialization completed")
@@ -111,7 +112,7 @@ async def test_task_executor():
         # 直接执行任务
         logger.info("Starting task execution...")
         try:
-            result = await TaskExecutor.execute_analysis_task(task.id)
+            result = await TaskExecutor.execute_continuous_analysis_task(task.id)
             logger.info(f"Task execution result: {result}")
         except Exception as e:
             logger.error(f"Task execution failed: {str(e)}")

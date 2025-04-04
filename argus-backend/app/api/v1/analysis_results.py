@@ -1,16 +1,46 @@
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
+from datetime import datetime
+
+from app.models.user import User
+from app.core.auth import get_current_user
 from app.models.analysis_result import AnalysisResult
 from app.services.analysis_result_service import AnalysisResultService
 
 router = APIRouter()
 
+@router.get("/", response_model=List[AnalysisResult])
+async def list_analysis_results(
+    current_user: User = Depends(get_current_user),
+    skip: int = 0,
+    limit: int = 100,
+    analysis_id: Optional[str] = None
+):
+    """
+    获取分析结果列表
+    """
+    query = {"creator": current_user.id}
+    if analysis_id:
+        query["analysis"] = analysis_id
+        
+    results = await AnalysisResult.find(query).skip(skip).limit(limit).to_list()
+    return results
+
 @router.get("/{result_id}", response_model=AnalysisResult)
-async def get_result(result_id: str):
-    """获取分析结果"""
-    result = await AnalysisResultService.get_result(result_id)
+async def get_analysis_result(
+    result_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取分析结果详情
+    """
+    result = await AnalysisResult.get(result_id)
     if not result:
-        raise HTTPException(status_code=404, detail="分析结果不存在")
+        raise HTTPException(status_code=404, detail="Analysis result not found")
+        
+    if result.creator != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this result")
+        
     return result
 
 @router.get("/analysis/{analysis_id}", response_model=List[AnalysisResult])
@@ -55,9 +85,19 @@ async def get_result_statistics(
     )
 
 @router.delete("/{result_id}")
-async def delete_result(result_id: str):
-    """删除分析结果"""
-    success = await AnalysisResultService.delete_result(result_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="分析结果不存在")
-    return {"message": "分析结果已删除"} 
+async def delete_analysis_result(
+    result_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    删除分析结果
+    """
+    result = await AnalysisResult.get(result_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Analysis result not found")
+        
+    if result.creator != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this result")
+        
+    await result.delete()
+    return {"message": "Analysis result deleted successfully"} 

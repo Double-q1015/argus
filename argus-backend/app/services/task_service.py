@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from beanie import PydanticObjectId
+import croniter
 from app.models.analysis import Task, TaskCondition, TaskStatus
 from app.models.user import User
 
@@ -33,14 +34,14 @@ class TaskService:
         # 创建任务状态
         task_status = TaskStatus(
             task_id=task,
+            status="pending",
             total_samples=0,
             processed_samples=0,
             failed_samples=[],
             current_sample=None,
             start_time=None,
             end_time=None,
-            error_message=None,
-            last_updated=datetime.utcnow()
+            error_message=None
         )
         await task_status.insert()
 
@@ -49,10 +50,10 @@ class TaskService:
             for i, condition in enumerate(conditions):
                 task_condition = TaskCondition(
                     task_id=task,
-                    condition_type=condition["type"],
-                    field=condition["field"],
-                    operator=condition["operator"],
-                    value=condition["value"],
+                    condition_type=condition.get("condition_type"),
+                    field=condition.get("field"),
+                    operator=condition.get("operator"),
+                    value=condition.get("value"),
                     logic=condition.get("logic", "AND"),
                     order=i
                 )
@@ -90,7 +91,7 @@ class TaskService:
             return None
 
         task_status.status = status
-        task_status.last_updated = datetime.utcnow()
+        task_status.updated_at = datetime.now(timezone.utc)
         
         if current_sample:
             task_status.current_sample = current_sample
@@ -117,7 +118,7 @@ class TaskService:
             task_status.failed_samples = failed_samples
         if total_samples is not None:
             task_status.total_samples = total_samples
-        task_status.last_updated = datetime.utcnow()
+        task_status.updated_at = datetime.now(timezone.utc)
 
         await task_status.save()
         return task_status
@@ -126,8 +127,14 @@ class TaskService:
     async def get_pending_tasks(limit: int = 10) -> List[Task]:
         """获取待执行的任务"""
         return await Task.find(
-            Task.status == "pending",
-            Task.is_active == True
+            {
+                "status": "pending",
+                "is_active": True,
+                "$or": [
+                    {"task_status.status": {"$in": ["pending", "failed"]}},
+                    {"task_status": {"$exists": False}}
+                ]
+            }
         ).sort(Task.priority).limit(limit).to_list()
 
     @staticmethod
@@ -138,7 +145,7 @@ class TaskService:
     ) -> List[Task]:
         """获取用户的任务列表"""
         return await Task.find(
-            Task.created_by == user_id
+            {"created_by.$id": user_id}
         ).sort(Task.created_at).skip(skip).limit(limit).to_list()
 
     @staticmethod
@@ -149,6 +156,29 @@ class TaskService:
             return None
 
         task.is_active = False
-        task.updated_at = datetime.utcnow()
+        task.updated_at = datetime.now(timezone.utc)
         await task.save()
-        return task 
+        return task
+
+    @staticmethod
+    async def create_task_status(task_id: PydanticObjectId) -> Optional[TaskStatus]:
+        """创建任务状态记录"""
+        task = await Task.get(task_id)
+        if not task:
+            return None
+            
+        task_status = TaskStatus(
+            task_id=task,
+            status="pending",
+            total_samples=0,
+            processed_samples=0,
+            failed_samples=[],
+            current_sample=None,
+            start_time=None,
+            end_time=None,
+            error_message=None,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc)
+        )
+        await task_status.insert()
+        return task_status 

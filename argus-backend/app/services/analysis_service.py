@@ -60,7 +60,7 @@ class AnalysisService:
     ) -> SampleAnalysis:
         """创建样本分析记录"""
         analysis = SampleAnalysis(
-            sample_id=sample_id,
+            sample=sample_id,
             analysis_type=analysis_type,
             status="pending",
             next_analysis_time=datetime.utcnow() if auto_analyze else None
@@ -120,7 +120,7 @@ class AnalysisService:
     ) -> AnalysisResult:
         """保存分析结果"""
         result = AnalysisResult(
-            sample_analysis_id=analysis_id,
+            analysis=analysis_id,
             result_type=result_type,
             result_data=result_data
         )

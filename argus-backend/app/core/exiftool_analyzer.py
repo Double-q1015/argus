@@ -1,7 +1,7 @@
 import exiftool
 import os
 import tempfile
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from minio import Minio
 from app.core.config import settings
 from app.models.exiftool import ExifToolMetadata
@@ -143,7 +143,7 @@ def convert_machine_type(hex_value: Any) -> str:
     except ValueError:
         return f"Invalid machine type value: {hex_value}"
 
-def convert_characteristics(value: int) -> list[str]:
+def convert_characteristics(value: int) -> List[str]:
     """
     将PE文件特征值转换为可读的描述列表
     :param value: int, 特征值

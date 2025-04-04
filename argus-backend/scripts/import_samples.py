@@ -23,14 +23,18 @@ async def get_access_token(session: aiohttp.ClientSession) -> Optional[str]:
     """获取访问令牌"""
     try:
         logger.info(f"正在使用用户名 {ADMIN_USERNAME} 获取访问令牌")
-        # 使用表单数据格式
-        form_data = aiohttp.FormData()
-        form_data.add_field('username', ADMIN_USERNAME)
-        form_data.add_field('password', ADMIN_PASSWORD)
+        
+        # 使用 OAuth2 密码模式的表单数据
+        data = {
+            'username': ADMIN_USERNAME,
+            'password': ADMIN_PASSWORD,
+            'grant_type': 'password'
+        }
         
         async with session.post(
-            f"{API_BASE_URL}/auth/login",
-            data=form_data
+            f"{API_BASE_URL}/auth/token",  # 使用新的 /token 端点
+            data=data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
         ) as response:
             if response.status == 200:
                 data = await response.json()

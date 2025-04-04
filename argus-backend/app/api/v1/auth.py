@@ -177,6 +177,44 @@ async def login(form_data: LoginForm):
         }
     }
 
+@router.post("/token")
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    """
+    使用 OAuth2 密码模式登录（不需要验证码）
+    """
+    # 检查登录尝试次数
+    if not await check_login_attempts(form_data.username):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="登录尝试次数过多，请稍后再试"
+        )
+    
+    # 验证用户
+    user = await User.find_one({"username": form_data.username})
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        # 更新登录尝试次数
+        await update_login_attempts(form_data.username)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户名或密码错误"
+        )
+    
+    # 重置登录尝试次数
+    user.login_attempts = 0
+    user.last_login = datetime.utcnow()
+    await user.save()
+    
+    # 创建访问令牌
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
 @router.post("/test-token")
 async def test_token(current_user: User = Depends(get_current_user)):
     """

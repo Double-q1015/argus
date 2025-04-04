@@ -7,7 +7,7 @@ from datetime import datetime
 import tempfile
 import threading
 from sqlalchemy.orm import Session
-from app.models.yara_rule import YaraRule
+from app.models.yara import YaraRule
 from app.core.cache import Cache
 
 class YaraMatch(BaseModel):

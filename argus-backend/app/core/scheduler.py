@@ -1,11 +1,17 @@
 import asyncio
 from datetime import datetime, timedelta
 import croniter
+import traceback
+import logging
 from app.services.task_executor import TaskExecutor
 from app.services.analysis_service import AnalysisService
 from app.services.analysis_config_service import AnalysisConfigService
 from app.services.analysis_executor import AnalysisExecutor
 from app.models.sample import Sample
+
+# 配置日志
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class TaskScheduler:
     """任务调度器"""
@@ -76,7 +82,8 @@ class TaskScheduler:
                 await asyncio.sleep(60)  # 每分钟检查一次
                 
             except Exception as e:
-                print(f"Error in schedule loop: {e}")
+                error_msg = f"Error in schedule loop: {str(e)}\n{traceback.format_exc()}"
+                logger.error(error_msg)
                 await asyncio.sleep(60)  # 发生错误时等待一分钟再继续
                 
     @staticmethod
@@ -86,7 +93,7 @@ class TaskScheduler:
             cron = croniter.croniter(cron_expression, datetime.utcnow())
             return cron.get_next(datetime)
         except Exception as e:
-            print(f"Error parsing cron expression: {e}")
+            logger.error(f"Error parsing cron expression: {e}")
             return None
             
     @staticmethod
@@ -107,7 +114,7 @@ class TaskScheduler:
                 raise ValueError(f"Invalid interval unit: {unit}")
                 
         except Exception as e:
-            print(f"Error parsing interval: {e}")
+            logger.error(f"Error parsing interval: {e}")
             return None
 
 # 创建全局调度器实例

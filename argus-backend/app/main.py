@@ -13,6 +13,16 @@ from app.models.user import User
 from app.models.yara import YaraRule
 from app.models.scale import Scale
 from app.models.api_key import ApiKey
+from app.models.analysis import (
+    Task,
+    TaskCondition,
+    TaskStatus,
+    SampleAnalysisStatus,
+    AnalysisConfig,
+    SampleAnalysis,
+    AnalysisResult,
+    AnalysisSchedule
+)
 from app.core.database import init_db
 from app.core.scheduler import scheduler
 from app.api.v1 import (
@@ -55,7 +65,11 @@ async def startup_event():
     db = client[settings.MONGODB_DB]
     
     # 清理现有索引
-    collections = ["samples", "users", "yara_rules", "scales", "api_keys"]
+    collections = [
+        "samples", "users", "yara_rules", "scales", "api_keys",
+        "tasks", "task_conditions", "task_status", "sample_analysis_status",
+        "analysis_configs", "sample_analyses", "analysis_results", "analysis_schedules"
+    ]
     for collection_name in collections:
         collection = db[collection_name]
         await collection.drop_indexes()
@@ -68,7 +82,15 @@ async def startup_event():
             User,
             YaraRule,
             Scale,
-            ApiKey
+            ApiKey,
+            Task,
+            TaskCondition,
+            TaskStatus,
+            SampleAnalysisStatus,
+            AnalysisConfig,
+            SampleAnalysis,
+            AnalysisResult,
+            AnalysisSchedule
         ],
         allow_index_dropping=True
     )
