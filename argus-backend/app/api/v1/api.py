@@ -20,7 +20,7 @@ api_router.include_router(
 api_router.include_router(
     analysis.router,
     prefix="/analysis",
-    tags=["文件分析"]
+    tags=["分析任务"]
 )
 
 api_router.include_router(

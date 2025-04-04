@@ -1,4 +1,4 @@
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from beanie import Document, Link, Indexed
 from pydantic import BaseModel, Field
@@ -14,7 +14,7 @@ class Sample(Document):
     file_size: int = Field(..., description="文件大小")
     file_type: str = Field(..., description="文件类型")
     sha256_digest: str = Field(..., description="SHA256哈希值", unique=True, index=True)
-    upload_time: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    upload_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     uploader: Link[User] = Field(..., description="上传者")
     analysis_status: str = Field(default="pending", description="分析状态")
     analysis_results: Optional[Dict[str, Any]] = None

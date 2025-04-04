@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from beanie import Document, Link, Indexed
 from pydantic import BaseModel, Field, EmailStr
@@ -10,12 +10,12 @@ class User(Document):
     """
     用户模型
     """
-    username: Indexed(str, unique=True) = Field(..., description="用户名")
-    email: Indexed(EmailStr, unique=True) = Field(..., description="邮箱")
+    username: str = Field(..., description="用户名", unique=True, index=True)
+    email: EmailStr = Field(..., description="邮箱", unique=True, index=True)
     hashed_password: str = Field(..., description="加密后的密码")
     is_active: bool = Field(default=True, description="是否激活")
     is_superuser: bool = Field(default=False, description="是否是超级用户")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_login: Optional[datetime] = Field(default=None, description="最后登录时间")
     login_attempts: int = Field(default=0, description="登录尝试次数")
     last_login_attempt: Optional[datetime] = Field(default=None, description="最后登录尝试时间")

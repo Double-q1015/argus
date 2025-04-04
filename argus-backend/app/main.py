@@ -13,12 +13,19 @@ from app.models.user import User
 from app.models.yara import YaraRule
 from app.models.scale import Scale
 from app.models.api_key import ApiKey
+from app.core.database import init_db
+from app.core.scheduler import scheduler
+from app.api.v1 import (
+    tasks,
+    analyses,
+    analysis_results,
+    analysis_configs
+)
 
 app = FastAPI(
-    title="Snake Skin API",
-    description="Snake Skin - 恶意软件分析平台API",
-    version="1.0.0",
-    openapi_url="/api/v1/openapi.json"
+    title="Argus Backend",
+    description="Argus Backend API",
+    version="1.0.0"
 )
 
 # 配置CORS
@@ -33,8 +40,10 @@ app.add_middleware(
 # 注册路由
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1", tags=["users"])
-app.include_router(samples.router, prefix="/api/v1", tags=["samples"])
-app.include_router(analysis.router, prefix="/api/v1", tags=["analysis"])
+app.include_router(samples.router, prefix="/api/v1/samples", tags=["samples"])
+app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
+app.include_router(analyses.router, prefix="/api/v1/analyses", tags=["analyses"])
+app.include_router(analysis_results.router, prefix="/api/v1/analysis-results", tags=["analysis-results"])
 app.include_router(api_keys.router, prefix="/api/v1", tags=["api_keys"])
 
 @app.on_event("startup")
@@ -65,6 +74,8 @@ async def startup_event():
     )
     
     await init_storage()
+    # 启动任务调度器
+    await scheduler.start()
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -73,6 +84,8 @@ async def shutdown_event():
     """
     client = AsyncIOMotorClient(settings.MONGODB_URL)
     client.close()
+    # 停止任务调度器
+    await scheduler.stop()
 
 @app.get("/")
 async def root():

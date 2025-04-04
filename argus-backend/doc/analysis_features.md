@@ -728,7 +728,245 @@ frontend/
    - 删除已撤销的密钥
    - 监控密钥使用情况
 
-# 分析功能文档
+# 分析功能设计文档
+
+## 1. 数据结构设计
+
+### 1.1 任务相关表
+
+#### Task（任务基础表）
+```python
+class Task(Document):
+    """任务基础表"""
+    name: str
+    description: Optional[str]
+    type: str  # 任务类型：analysis, scan, etc.
+    status: str  # pending, running, completed, failed
+    priority: int
+    created_by: User
+    created_at: datetime
+    updated_at: datetime
+    schedule: Optional[str]  # cron表达式
+    is_active: bool = True
+```
+
+#### TaskCondition（任务条件表）
+```python
+class TaskCondition(Document):
+    """任务条件表"""
+    task_id: Task
+    condition_type: str  # file_type, file_size, hash, etc.
+    field: str  # 字段名
+    operator: str  # in, not_in, between, gt, lt, etc.
+    value: Any  # 条件值
+    logic: str  # AND, OR
+    parent_id: Optional[TaskCondition]  # 父条件ID，用于条件组合
+    order: int  # 条件顺序
+```
+
+#### TaskStatus（任务状态表）
+```python
+class TaskStatus(Document):
+    """任务状态表"""
+    task_id: Task
+    total_samples: int
+    processed_samples: int
+    failed_samples: List[str]
+    current_sample: Optional[str]
+    start_time: Optional[datetime]
+    end_time: Optional[datetime]
+    error_message: Optional[str]
+    last_updated: datetime
+```
+
+### 1.2 样本分析相关表
+
+#### SampleAnalysis（样本分析记录表）
+```python
+class SampleAnalysis(Document):
+    """样本分析记录表"""
+    sample_id: Sample
+    analysis_type: str  # exiftool, pe_info, strings, etc.
+    status: str  # pending, analyzing, completed, failed
+    version: int  # 分析版本号
+    retry_count: int
+    last_analysis_time: Optional[datetime]
+    next_analysis_time: Optional[datetime]
+    error_message: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+```
+
+#### AnalysisResult（分析结果表）
+```python
+class AnalysisResult(Document):
+    """分析结果表"""
+    sample_analysis_id: SampleAnalysis
+    result_type: str  # 结果类型
+    result_data: Dict[str, Any]  # 结果数据
+    created_at: datetime
+    version: int  # 结果版本号
+```
+
+### 1.3 分析配置相关表
+
+#### AnalysisConfig（分析配置表）
+```python
+class AnalysisConfig(Document):
+    """分析配置表"""
+    name: str
+    description: Optional[str]
+    analysis_type: str
+    auto_analyze: bool
+    priority: int
+    resource_limits: Dict[str, int]
+    created_by: User
+    created_at: datetime
+    updated_at: datetime
+    is_active: bool = True
+```
+
+#### AnalysisSchedule（分析计划表）
+```python
+class AnalysisSchedule(Document):
+    """分析计划表"""
+    config_id: AnalysisConfig
+    schedule_type: str  # cron, interval, manual
+    schedule_value: str  # cron表达式或时间间隔
+    last_run: Optional[datetime]
+    next_run: Optional[datetime]
+    is_active: bool = True
+```
+
+## 2. 索引设计
+
+### 2.1 任务相关索引
+```python
+# Task表索引
+Task.Index("status", "type", "priority")
+Task.Index("created_by", "created_at")
+Task.Index("schedule", "is_active")
+
+# TaskCondition表索引
+TaskCondition.Index("task_id", "condition_type")
+TaskCondition.Index("parent_id", "order")
+
+# TaskStatus表索引
+TaskStatus.Index("task_id", "last_updated")
+```
+
+### 2.2 样本分析相关索引
+```python
+# SampleAnalysis表索引
+SampleAnalysis.Index("sample_id", "analysis_type")
+SampleAnalysis.Index("status", "analysis_type")
+SampleAnalysis.Index("next_analysis_time")
+
+# AnalysisResult表索引
+AnalysisResult.Index("sample_analysis_id", "result_type")
+AnalysisResult.Index("created_at")
+```
+
+### 2.3 分析配置相关索引
+```python
+# AnalysisConfig表索引
+AnalysisConfig.Index("analysis_type", "is_active")
+AnalysisConfig.Index("created_by", "created_at")
+
+# AnalysisSchedule表索引
+AnalysisSchedule.Index("config_id", "is_active")
+AnalysisSchedule.Index("next_run")
+```
+
+## 3. 功能特点
+
+### 3.1 任务管理
+- 支持多种任务类型（分析、扫描等）
+- 支持任务优先级
+- 支持任务调度（cron表达式）
+- 支持任务状态跟踪
+- 支持任务条件组合
+
+### 3.2 样本分析
+- 支持多种分析类型（exiftool、pe_info、strings等）
+- 支持分析版本控制
+- 支持分析重试机制
+- 支持分析结果历史记录
+- 支持增量分析
+
+### 3.3 分析配置
+- 支持自动分析配置
+- 支持资源限制配置
+- 支持分析计划配置
+- 支持分析优先级配置
+
+## 4. 查询示例
+
+### 4.1 任务查询
+```python
+# 获取待执行的任务
+pending_tasks = await Task.find(
+    Task.status == "pending",
+    Task.is_active == True
+).sort(Task.priority).to_list()
+
+# 获取特定用户的任务
+user_tasks = await Task.find(
+    Task.created_by == user_id
+).sort(Task.created_at).to_list()
+```
+
+### 4.2 样本分析查询
+```python
+# 获取需要分析的样本
+samples_to_analyze = await SampleAnalysis.find(
+    SampleAnalysis.status == "pending",
+    SampleAnalysis.next_analysis_time <= datetime.utcnow()
+).to_list()
+
+# 获取特定类型的分析结果
+pe_results = await AnalysisResult.find(
+    AnalysisResult.result_type == "pe_header"
+).sort(AnalysisResult.created_at).to_list()
+```
+
+### 4.3 分析配置查询
+```python
+# 获取活动的分析配置
+active_configs = await AnalysisConfig.find(
+    AnalysisConfig.is_active == True
+).to_list()
+
+# 获取待执行的分析计划
+pending_schedules = await AnalysisSchedule.find(
+    AnalysisSchedule.is_active == True,
+    AnalysisSchedule.next_run <= datetime.utcnow()
+).to_list()
+```
+
+## 5. 设计优点
+
+### 5.1 完整性
+- 覆盖任务管理的各个方面
+- 支持条件组合
+- 支持分析版本控制
+- 支持结果历史记录
+
+### 5.2 灵活性
+- 支持多种任务类型
+- 支持多种分析类型
+- 支持多种调度方式
+- 支持配置管理
+
+### 5.3 可扩展性
+- 易于添加新的任务类型
+- 易于添加新的分析类型
+- 易于添加新的配置项
+
+### 5.4 性能考虑
+- 合理的索引设计
+- 支持高效查询
+- 支持分页和排序
 
 ## YARA 规则管理
 
