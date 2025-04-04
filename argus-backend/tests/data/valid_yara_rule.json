@@ -1,0 +1,12 @@
+{
+    "name": "TestRule",
+    "description": "A test YARA rule",
+    "content": "rule TestRule { strings: $a = \"test\" condition: $a }",
+    "is_active": true,
+    "is_public": false,
+    "tags": ["test", "example"],
+    "metadata": {
+        "author": "test_user",
+        "version": "1.0"
+    }
+} 
