@@ -16,6 +16,10 @@ class AnalysisConfigService:
         resource_limits: Optional[Dict[str, int]] = None
     ) -> AnalysisConfig:
         """创建分析配置"""
+        # 确保created_by是User对象
+        if not isinstance(created_by, User):
+            raise ValueError("created_by must be a User object")
+
         config = AnalysisConfig(
             name=name,
             analysis_type=analysis_type,

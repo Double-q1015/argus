@@ -8,7 +8,11 @@ const http = axios.create({
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  validateStatus: function (status) {
+    return status >= 200 && status < 400 // 接受 2xx 和 3xx 的状态码
+  },
+  maxRedirects: 5 // 允许最多5次重定向
 })
 
 // 请求拦截器

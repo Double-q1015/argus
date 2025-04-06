@@ -62,18 +62,10 @@ async def test_task_executor():
     try:
         # 获取或创建测试用户
         logger.info("Looking for test user...")
-        user = await User.find_one(User.email == 'test_hash@example.com')
+        user = await User.find_one(User.username == 'testuser22222')
         if not user:
-            logger.info("Creating new test user...")
-            user = User(
-                username='test_user_hash',
-                email='test_hash@example.com',
-                hashed_password=pwd_context.hash('test123'),
-                is_active=True,
-                is_superuser=True
-            )
-            await user.insert()
-            logger.info("Created test user")
+            logger.error("User not found")
+            return
         else:
             logger.info("Using existing test user")
         
@@ -92,14 +84,14 @@ async def test_task_executor():
         # 创建分析任务
         logger.info("Creating analysis task...")
         task = await TaskService.create_task(
-            name='测试哈希分析任务',
+            name='全样本哈希分析任务',
             task_type='hash',
-            created_by=user,
-            description='测试哈希分析任务',
+            created_by=user.username,
+            description='对所有样本执行哈希分析',
             priority=1,
             config_id=config.id
         )
-        logger.info(f"Created analysis task with ID: {task.id}")
+        logger.info(f"Created analysis task with ID: {task.id if task else None}")
         
         # 检查任务状态
         task_status = await TaskService.get_task_status(task.id)

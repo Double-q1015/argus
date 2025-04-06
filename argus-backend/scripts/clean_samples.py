@@ -1,76 +1,69 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import asyncio
 import logging
-from app.core.config import settings
+import sys
+from pathlib import Path
+from collections import defaultdict
+
+# 添加项目根目录到Python路径
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from app.db.init_db import init_db
 from app.models.sample import Sample
 from app.core.storage import storage
-from beanie import init_beanie
-from motor.motor_asyncio import AsyncIOMotorClient
 
-logging.basicConfig(level=logging.INFO)
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
-async def init_db():
-    """初始化数据库连接"""
-    client = AsyncIOMotorClient(settings.MONGODB_URL)
-    await init_beanie(
-        database=client[settings.MONGODB_DB_NAME],
-        document_models=[Sample]
-    )
-
-async def clean_samples():
-    """
-    清理样本数据：
-    1. 删除没有 file_path 的样本记录
-    2. 删除存储中不存在的文件
-    3. 修复 file_path 格式
-    """
+async def clean_duplicate_samples():
+    """清理重复的样本记录"""
     try:
-        # 初始化数据库连接
+        # 初始化数据库
+        logger.info("初始化数据库...")
         await init_db()
+        logger.info("数据库初始化成功")
         
         # 获取所有样本
-        samples = await Sample.find_all().to_list()
-        logger.info(f"Found {len(samples)} samples")
+        samples = await Sample.find().to_list()
+        logger.info(f"找到 {len(samples)} 个样本记录")
         
-        # 清理计数器
-        deleted_count = 0
-        fixed_count = 0
-        
+        # 按SHA256分组
+        sha256_groups = defaultdict(list)
         for sample in samples:
-            try:
-                # 检查 file_path
-                if not sample.file_path:
-                    logger.warning(f"Sample {sample.sha256_digest} has no file_path, deleting...")
-                    await sample.delete()
-                    deleted_count += 1
-                    continue
-                
-                # 检查文件是否存在于存储中
-                if not await storage.file_exists(sample.file_path):
-                    logger.warning(f"File not found in storage: {sample.file_path}, deleting sample...")
-                    await sample.delete()
-                    deleted_count += 1
-                    continue
-                
-                # 修复 file_path 格式
-                if not sample.file_path.startswith("samples/"):
-                    new_path = f"samples/{sample.sha256_digest}"
-                    logger.info(f"Fixing file path for {sample.sha256_digest}: {sample.file_path} -> {new_path}")
-                    sample.file_path = new_path
-                    await sample.save()
-                    fixed_count += 1
-                
-            except Exception as e:
-                logger.error(f"Error processing sample {sample.sha256_digest}: {e}")
-                continue
+            sha256_groups[sample.sha256_digest].append(sample)
         
-        logger.info(f"Cleanup completed:")
-        logger.info(f"- Deleted {deleted_count} invalid samples")
-        logger.info(f"- Fixed {fixed_count} file paths")
+        # 统计重复记录
+        duplicate_count = sum(len(group) - 1 for group in sha256_groups.values() if len(group) > 1)
+        logger.info(f"发现 {duplicate_count} 个重复记录")
+        
+        # 处理重复记录
+        deleted_count = 0
+        for sha256, group in sha256_groups.items():
+            if len(group) > 1:
+                # 按创建时间排序
+                group.sort(key=lambda x: x.created_at)
+                
+                # 保留第一条记录，删除其他记录
+                keep_sample = group[0]
+                for sample in group[1:]:
+                    logger.info(f"删除重复记录: {sample.id} (SHA256: {sha256})")
+                    await sample.delete()
+                    deleted_count += 1
+                
+                logger.info(f"保留记录: {keep_sample.id} (SHA256: {sha256})")
+        
+        logger.info(f"清理完成，共删除 {deleted_count} 个重复记录")
+        return True
         
     except Exception as e:
-        logger.error(f"Error during cleanup: {e}")
-        raise
+        logger.error(f"清理过程中发生错误: {str(e)}")
+        return False
 
 if __name__ == "__main__":
-    asyncio.run(clean_samples()) 
+    asyncio.run(clean_duplicate_samples()) 

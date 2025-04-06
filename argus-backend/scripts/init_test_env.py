@@ -9,6 +9,7 @@ from app.models.yara import YaraRule
 from app.models.scale import Scale
 from app.models.api_key import ApiKey
 from beanie import init_beanie
+from app.core.storage import StorageFactory, storage_adapter
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -69,8 +70,32 @@ def init_minio():
         logger.error(f"MinIO 初始化失败: {str(e)}")
         raise
 
+async def init_storage():
+    """初始化存储系统"""
+    try:
+        # 使用存储适配器初始化存储
+        if await storage_adapter.file_exists("test.txt"):
+            await storage_adapter.delete_file("test.txt")
+        
+        # 测试文件上传
+        test_content = b"test"
+        if await storage_adapter.save_file("test.txt", test_content):
+            # 测试文件下载
+            downloaded_content = await storage_adapter.get_file("test.txt")
+            if downloaded_content == test_content:
+                # 测试文件删除
+                await storage_adapter.delete_file("test.txt")
+                logger.info("Storage initialization successful")
+                return True
+        
+        logger.error("Storage initialization failed")
+        return False
+    except Exception as e:
+        logger.error(f"Error initializing storage: {e}")
+        return False
+
 async def main():
-    """主函数"""
+    """初始化测试环境"""
     try:
         # 初始化 MongoDB
         await init_mongodb()
@@ -78,7 +103,12 @@ async def main():
         # 初始化 MinIO
         init_minio()
         
-        logger.info("测试环境初始化完成")
+        # 初始化存储系统
+        if not await init_storage():
+            logger.error("Failed to initialize storage")
+            return
+        
+        logger.info("Test environment initialization completed")
     except Exception as e:
         logger.error(f"初始化失败: {str(e)}")
         raise

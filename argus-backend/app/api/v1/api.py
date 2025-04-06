@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, samples, scales, yara, analysis
+from app.api.v1 import auth, samples, yara, analysis, tasks, users, migration
 from app.api.v1.endpoints import home, search
 
 api_router = APIRouter()
@@ -24,12 +24,6 @@ api_router.include_router(
 )
 
 api_router.include_router(
-    scales.router,
-    prefix="/scales",
-    tags=["规模分析"]
-)
-
-api_router.include_router(
     yara.router,
     prefix="/yara",
     tags=["Yara规则"]
@@ -46,3 +40,21 @@ api_router.include_router(
     prefix="/search",
     tags=["搜索"]
 ) 
+
+api_router.include_router(
+    tasks.router,
+    prefix="/tasks",
+    tags=["任务管理"]
+)
+
+api_router.include_router(
+    users.router,
+    prefix="/users",
+    tags=["用户管理"]
+)
+
+api_router.include_router(
+    migration.router,
+    prefix="/migration",
+    tags=["数据迁移"]
+)

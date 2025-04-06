@@ -2,7 +2,6 @@ import asyncio
 from datetime import datetime
 from typing import Dict, Any, List
 from app.core.storage import get_sample
-from app.models.scale import Scale
 from app.models.sample import Sample
 
 async def analyze_sample(sample: Sample, config: Dict[str, Any]) -> Dict[str, Any]:
@@ -132,78 +131,3 @@ def analyze_file_header(data: bytes) -> Dict[str, Any]:
         "format": "unknown",
         "magic": data[:16].hex()
     }
-
-async def start_scale_analysis(scale: Scale) -> bool:
-    """
-    启动规模分析
-    """
-    try:
-        # 更新规模状态为运行中
-        scale.status = "running"
-        scale.updated_at = datetime.utcnow()
-        await scale.save()
-        
-        # 获取样本列表
-        samples = []
-        for sha256 in scale.samples:
-            sample = await Sample.find_one(Sample.sha256_digest == sha256)
-            if sample:
-                samples.append(sample)
-        
-        # 分析每个样本
-        results = []
-        for sample in samples:
-            sample_result = await analyze_sample(sample, scale.configuration)
-            if sample_result["status"] == "success":
-                results.append({
-                    "sha256": sample.sha256_digest,
-                    "results": sample_result["results"]
-                })
-                
-                # 更新样本的分析状态
-                sample.analysis_status = "completed"
-                sample.analysis_results = sample_result["results"]
-                await sample.save()
-            else:
-                results.append({
-                    "sha256": sample.sha256_digest,
-                    "error": sample_result["error"]
-                })
-                
-                # 更新样本的分析状态
-                sample.analysis_status = "failed"
-                sample.analysis_results = {"error": sample_result["error"]}
-                await sample.save()
-        
-        # 更新规模分析结果
-        scale.status = "completed"
-        scale.results = {
-            "completion_time": datetime.utcnow().isoformat(),
-            "sample_results": results
-        }
-        scale.updated_at = datetime.utcnow()
-        await scale.save()
-        
-        return True
-        
-    except Exception as e:
-        # 更新规模分析状态为失败
-        scale.status = "failed"
-        scale.error_message = str(e)
-        scale.updated_at = datetime.utcnow()
-        await scale.save()
-        return False
-
-async def stop_scale_analysis(scale: Scale) -> bool:
-    """
-    停止规模分析
-    """
-    try:
-        if scale.status == "running":
-            scale.status = "stopped"
-            scale.updated_at = datetime.utcnow()
-            await scale.save()
-        return True
-    except Exception as e:
-        print(f"Error stopping scale analysis: {e}")
-        return False 

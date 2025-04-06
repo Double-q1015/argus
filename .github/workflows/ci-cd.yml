@@ -55,6 +55,7 @@ jobs:
           MINIO_SECRET_KEY: minioadmin
           MINIO_BUCKET_NAME: argus-samples
           MINIO_SECURE: "false"
+          STORAGE_TYPE: "minio"
         run: |
           python scripts/init_test_env.py
           
@@ -80,6 +81,7 @@ jobs:
           MINIO_SECRET_KEY: minioadmin
           MINIO_BUCKET_NAME: argus-samples
           MINIO_SECURE: "false"
+          STORAGE_TYPE: "minio"
         run: |
           pytest
           

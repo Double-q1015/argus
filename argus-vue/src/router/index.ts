@@ -8,8 +8,10 @@ import CreateYara from '@/views/yara/CreateYara.vue'
 import ListYara from '@/views/yara/ListYara.vue'
 import Analysis from '@/views/Analysis.vue'
 import Samples from '@/views/samples/index.vue'
-import ScaleList from '@/views/scales/ScaleList.vue'
 import Search from '@/views/Search.vue'
+import TaskList from '@/views/TaskList.vue'
+import TaskDetail from '@/views/TaskDetail.vue'
+import TaskCreate from '@/views/TaskCreate.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -66,14 +68,39 @@ const router = createRouter({
           component: Settings
         },
         {
-          path: 'scales',
-          name: 'Scales',
-          component: ScaleList
-        },
-        {
           path: 'samples/:sha256',
           name: 'sample-detail',
           component: () => import('@/views/SampleDetail.vue')
+        },
+        {
+          path: 'tasks',
+          name: 'TaskList',
+          component: TaskList
+        },
+        {
+          path: 'tasks/create',
+          name: 'TaskCreate',
+          component: TaskCreate
+        },
+        {
+          path: 'tasks/:id',
+          name: 'TaskDetail',
+          component: TaskDetail
+        },
+        {
+          path: 'migration',
+          name: 'Migration',
+          component: () => import('@/views/migration/List.vue')
+        },
+        {
+          path: 'migration/create',
+          name: 'MigrationCreate',
+          component: () => import('@/views/migration/Create.vue')
+        },
+        {
+          path: 'migration/:id',
+          name: 'MigrationDetail',
+          component: () => import('@/views/migration/Detail.vue')
         }
       ]
     }

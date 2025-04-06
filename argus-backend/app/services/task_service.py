@@ -10,7 +10,7 @@ class TaskService:
     async def create_task(
         name: str,
         task_type: str,
-        created_by: User,
+        created_by: str,
         description: Optional[str] = None,
         priority: int = 0,
         schedule: Optional[str] = None,
@@ -18,16 +18,22 @@ class TaskService:
         config_id: Optional[PydanticObjectId] = None
     ) -> Task:
         """创建新任务"""
+        # 获取用户对象
+        user = await User.find_one({"username": created_by})
+        if not user:
+            return None
+
         # 创建任务
         task = Task(
             name=name,
             type=task_type,
             description=description,
-            status="pending",
+            status="created",
             priority=priority,
-            created_by=created_by,
+            created_by=user,
             schedule=schedule,
-            config_id=config_id
+            config_id=config_id,
+            is_active=True
         )
         await task.insert()
 
@@ -41,7 +47,9 @@ class TaskService:
             current_sample=None,
             start_time=None,
             end_time=None,
-            error_message=None
+            error_message=None,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc)
         )
         await task_status.insert()
 
@@ -92,7 +100,9 @@ class TaskService:
 
         task_status.status = status
         task_status.updated_at = datetime.now(timezone.utc)
-        
+
+        if status in ["completed", "failed"]:
+            task_status.end_time = datetime.now(timezone.utc)
         if current_sample:
             task_status.current_sample = current_sample
         if error_message:
@@ -132,7 +142,7 @@ class TaskService:
                 "is_active": True,
                 "$or": [
                     {"task_status.status": {"$in": ["pending", "failed"]}},
-                    {"task_status": {"$exists": False}}
+                    {"task_status.end_time": None},  
                 ]
             }
         ).sort(Task.priority).limit(limit).to_list()

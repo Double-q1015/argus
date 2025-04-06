@@ -91,6 +91,10 @@ class TaskExecutor:
         if not task:
             logger.error(f"Task not found: {task_id}")
             return False
+        # 更新任务本身的状态
+        task.status = 'running'
+        task.updated_at = datetime.now(timezone.utc)
+        await task.save()
             
         # 获取任务状态，如果不存在则创建
         task_status = await TaskService.get_task_status(task_id)
@@ -183,9 +187,7 @@ class TaskExecutor:
                         analysis_id=analysis.id,
                         status="completed"
                     )
-                    
                     processed_samples += 1
-                    logger.info(f"Successfully processed sample {sample.id}")
                     
                 except Exception as e:
                     error_msg = f"Error processing sample {sample.id}: {str(e)}\n{traceback.format_exc()}"
@@ -210,12 +212,12 @@ class TaskExecutor:
             # 更新任务状态为完成
             await TaskService.update_task_status(
                 task_id,
-                "completed",
+                'completed',
                 error_message=f"Processed {processed_samples}/{total_samples} samples, {len(failed_samples)} failed"
             )
             
             # 更新任务本身的状态
-            task.status = "completed"
+            task.status = 'completed'
             task.updated_at = datetime.now(timezone.utc)
             await task.save()
             
@@ -227,12 +229,13 @@ class TaskExecutor:
             # 更新任务状态为失败
             await TaskService.update_task_status(
                 task_id,
-                "failed",
+                'failed',
                 error_message=error_msg
             )
             # 更新任务本身的状态
-            task.status = "failed"
+            task.status = 'failed'
             task.updated_at = datetime.now(timezone.utc)
+            logger.info(f"Task {task.id} failed")
             await task.save()
             return False
 
@@ -246,9 +249,9 @@ class TaskExecutor:
             # 检查任务调度时间
             if task.schedule:
                 try:
-                    cron = croniter.croniter(task.schedule, datetime.utcnow())
+                    cron = croniter.croniter(task.schedule, datetime.now(timezone.utc))
                     next_run = cron.get_prev(datetime)
-                    if next_run > datetime.utcnow():
+                    if next_run > datetime.now(timezone.utc):
                         logger.info(f"Task {task.id} scheduled for {next_run}, skipping")
                         continue
                 except Exception as e:
@@ -410,13 +413,14 @@ class TaskExecutor:
             # 更新任务状态为完成
             await TaskService.update_task_status(
                 task_id,
-                "completed",
+                'completed',
                 error_message=f"Processed {processed_samples}/{total_samples} samples, {len(failed_samples)} failed"
             )
             
             # 更新任务本身的状态
-            task.status = "completed"
+            task.status = 'completed'
             task.updated_at = datetime.now(timezone.utc)
+            logger.info(f"Task {task.id} completed")
             await task.save()
             
             return True
@@ -427,12 +431,13 @@ class TaskExecutor:
             # 更新任务状态为失败
             await TaskService.update_task_status(
                 task_id,
-                "failed",
+                'failed',
                 error_message=error_msg
             )
             # 更新任务本身的状态
-            task.status = "failed"
+            task.status = 'failed'
             task.updated_at = datetime.now(timezone.utc)
+            logger.info(f"Task {task.id} failed")
             await task.save()
             return False
 

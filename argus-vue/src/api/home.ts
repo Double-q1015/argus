@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { SampleResponse } from './samples'
+import type { SampleListResponse } from './samples'
 
 export interface DashboardStats {
   total_samples: number

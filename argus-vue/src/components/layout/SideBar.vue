@@ -18,15 +18,6 @@
       <el-menu-item index="/samples/create">新建样本</el-menu-item>
     </el-sub-menu>
 
-    <el-sub-menu index="/scales">
-      <template #title>
-        <el-icon><data-line /></el-icon>
-        <span>规模管理</span>
-      </template>
-      <el-menu-item index="/scales">规模列表</el-menu-item>
-      <el-menu-item index="/scales/create">新建规模</el-menu-item>
-    </el-sub-menu>
-
     <el-menu-item index="/settings">
       <el-icon><setting /></el-icon>
       <span>系统设置</span>
@@ -40,7 +31,6 @@ import { useRoute } from 'vue-router'
 import {
   HomeFilled,
   Document,
-  DataLine,
   Setting
 } from '@element-plus/icons-vue'
 

@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional, Dict, Any
 from pydantic import BaseSettings, validator
 import os
 from dotenv import load_dotenv
@@ -63,6 +63,49 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10MB
     LOG_BACKUP_COUNT: int = 5
+
+    # AWS S3配置
+    S3_ENDPOINT: Optional[str] = None
+    S3_ACCESS_KEY: Optional[str] = None
+    S3_SECRET_KEY: Optional[str] = None
+    S3_REGION: str = "us-east-1"
+    S3_BUCKET_NAME: Optional[str] = None
+    S3_SECURE: bool = True
+    
+    # 本地文件存储配置
+    LOCAL_STORAGE_PATH: str = "/data/argus-samples"
+    
+    # 存储配置
+    STORAGE_TYPE: str = "minio"  # 可选值: "minio", "s3", "local"
+    
+    @property
+    def storage_config(self) -> Dict[str, Any]:
+        """获取存储配置"""
+        if self.STORAGE_TYPE == "minio":
+            return {
+                "endpoint": self.MINIO_ENDPOINT,
+                "access_key": self.MINIO_ACCESS_KEY,
+                "secret_key": self.MINIO_SECRET_KEY,
+                "secure": self.MINIO_SECURE,
+                "bucket_name": self.MINIO_BUCKET_NAME
+            }
+        elif self.STORAGE_TYPE == "s3":
+            if not all([self.S3_ACCESS_KEY, self.S3_SECRET_KEY, self.S3_BUCKET_NAME]):
+                raise ValueError("S3 configuration is incomplete")
+            return {
+                "endpoint": self.S3_ENDPOINT,
+                "access_key": self.S3_ACCESS_KEY,
+                "secret_key": self.S3_SECRET_KEY,
+                "region": self.S3_REGION,
+                "bucket_name": self.S3_BUCKET_NAME,
+                "secure": self.S3_SECURE
+            }
+        elif self.STORAGE_TYPE == "local":
+            return {
+                "base_path": self.LOCAL_STORAGE_PATH
+            }
+        else:
+            raise ValueError(f"Unsupported storage type: {self.STORAGE_TYPE}")
 
     def setup_logging(self):
         """配置日志系统"""

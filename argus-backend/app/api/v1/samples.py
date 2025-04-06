@@ -105,13 +105,21 @@ async def upload_sample_file(
         existing_sample = await Sample.find_one({"sha256_digest": sha256_digest})
         if existing_sample:
             logger.info(f"样本已存在: {sha256_digest}")
+            # 如果样本已存在，更新标签和描述（如果提供）
+            if tags:
+                existing_sample.tags = list(set(existing_sample.tags + tags))  # 合并标签并去重
+            if description:
+                existing_sample.description = description
+            await existing_sample.save()
+            
             return {
-                "message": "Sample already exists",
-                "sha256_digest": sha256_digest
+                "message": "Sample already exists, tags and description updated",
+                "sha256_digest": sha256_digest,
+                "file_path": existing_sample.file_path
             }
         
         # 生成文件路径
-        file_path = f"samples/{sha256_digest}"
+        file_path = f"{sha256_digest}"
         logger.info(f"生成文件路径: {file_path}")
         
         # 保存文件到存储

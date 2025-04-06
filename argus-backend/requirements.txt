@@ -33,7 +33,7 @@ iniconfig==2.1.0
 lazy-model==0.2.0
 Mako==1.3.9
 MarkupSafe==2.1.5
-minio==7.2.5
+minio>=7.1.0
 motor==2.5.1
 multidict==6.1.0
 multivolumefile==0.2.3
@@ -79,3 +79,5 @@ uvicorn==0.27.1
 yara-python==4.5.1
 yarl==1.15.2
 zipp==3.20.2
+boto3>=1.26.0
+botocore>=1.29.0

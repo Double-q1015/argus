@@ -35,9 +35,13 @@
         <el-menu-item index="/yara/create">创建Yara规则</el-menu-item>
         <el-menu-item index="/yara/list">查看Yara规则</el-menu-item>
       </el-sub-menu>
-      <el-menu-item index="/scales">
-        <el-icon><DataAnalysis /></el-icon>
-        规模分析
+      <el-menu-item index="/tasks">
+        <el-icon><List /></el-icon>
+        任务管理
+      </el-menu-item>
+      <el-menu-item index="/migration">
+        <el-icon><Connection /></el-icon>
+        数据迁移
       </el-menu-item>
     </el-menu>
     <div class="user-info">
@@ -60,7 +64,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ArrowDown, House, Document, DataAnalysis, Monitor, Upload, Search } from '@element-plus/icons-vue'
+import { ArrowDown, House, Document, Monitor, Upload, Search, List, Connection } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()

@@ -12,21 +12,54 @@ class Task(Document):
     type: str  # 任务类型：analysis, scan, etc.
     status: str = Field(default="pending")  # pending, running, completed, failed
     priority: int = 0
-    created_by: Link[User]
+    created_by: Link[User] = Field(description="创建者", sa_relationship_kwargs={"lazy": "selectin"})
     created_at: datetime = datetime.now(timezone.utc)
     updated_at: datetime = datetime.now(timezone.utc)
     schedule: Optional[str] = None  # cron表达式
     is_active: bool = True
-    config_id: Optional[Union[str, Link["AnalysisConfig"]]] = None  # 分析配置ID
+    config_id: Optional[Union[str, Link["AnalysisConfig"]]] = Field(default=None, description="分析配置ID", sa_relationship_kwargs={"lazy": "selectin"})
 
     class Settings:
         name = "tasks"
         indexes = [
             [("status", 1), ("type", 1), ("priority", 1)],
-            [("created_by", 1), ("created_at", 1)],
+            [("created_by.$id", 1), ("created_at", 1)],
             [("schedule", 1), ("is_active", 1)],
             [("config_id", 1)]
         ]
+
+    async def to_response_dict(self) -> dict:
+        """转换为响应字典"""
+        d = {
+            "id": str(self.id),
+            "name": self.name,
+            "description": self.description,
+            "type": self.type,
+            "status": self.status,
+            "priority": self.priority,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+            "schedule": self.schedule,
+            "is_active": self.is_active
+        }
+
+        # 处理created_by字段
+        if isinstance(self.created_by, Link):
+            user = await self.created_by.fetch()
+            d["created_by"] = str(user.id) if user else None
+        elif isinstance(self.created_by, User):
+            d["created_by"] = str(self.created_by.id)
+        else:
+            d["created_by"] = str(self.created_by) if self.created_by else None
+
+        # 处理config_id字段
+        if isinstance(self.config_id, Link):
+            config = await self.config_id.fetch()
+            d["config_id"] = str(config.id) if config else None
+        else:
+            d["config_id"] = str(self.config_id) if self.config_id else None
+
+        return d
 
 class TaskCondition(Document):
     """任务条件表"""
@@ -46,6 +79,13 @@ class TaskCondition(Document):
             [("parent_id", 1), ("order", 1)]
         ]
 
+# 应该新建一个枚举类来定义任务状态
+class TaskStatusEnum():
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
 class TaskStatus(Document):
     """任务状态表"""
     task_id: Link[Task]
@@ -60,6 +100,25 @@ class TaskStatus(Document):
     created_at: datetime = datetime.now(timezone.utc)
     updated_at: datetime = datetime.now(timezone.utc)
 
+    @classmethod
+    def created(cls):
+        return 'created'
+
+    @classmethod
+    def pending(cls):
+        return 'pending'
+
+    @classmethod
+    def running(cls):
+        return 'running'
+
+    @classmethod
+    def completed(cls):
+        return 'completed'
+
+    @classmethod
+    def failed(cls):
+        return 'failed'
     class Settings:
         name = "task_status"
         indexes = [

@@ -6,6 +6,7 @@ from app.schemas.analysis import AnalysisResponse
 from bson import ObjectId
 from app.models.analysis import SampleAnalysis, AnalysisResult
 from app.models.sample import Sample
+from beanie.odm.fields import Link
 
 class AnalysisService:
     def __init__(self, db=None):
@@ -59,8 +60,13 @@ class AnalysisService:
         auto_analyze: bool = False
     ) -> SampleAnalysis:
         """创建样本分析记录"""
+        # 获取样本对象
+        sample = await Sample.get(sample_id)
+        if not sample:
+            raise ValueError(f"Sample not found: {sample_id}")
+            
         analysis = SampleAnalysis(
-            sample=sample_id,
+            sample=Link(sample, Sample),  # 使用Link包装样本对象
             analysis_type=analysis_type,
             status="pending",
             next_analysis_time=datetime.utcnow() if auto_analyze else None
