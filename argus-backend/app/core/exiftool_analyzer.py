@@ -6,6 +6,14 @@ from minio import Minio
 from app.core.config import settings
 from app.models.exiftool import ExifToolMetadata
 
+class ExifToolError(Exception):
+    """ExifTool 执行过程中的错误"""
+    pass
+
+class FileNotFoundError(Exception):
+    """文件不存在错误"""
+    pass
+
 # 机器类型映射
 MACHINE_TYPE_MAPPING = {
     0x014C: "Intel 386 or later processors and compatible processors",
@@ -192,17 +200,7 @@ async def perform_exiftool_analysis(minio_client: Optional[Minio] = None,
                 minio_client.fget_object(bucket_name, object_name, temp_path)
                 
                 # 分析临时文件
-                result = await _analyze_file(temp_path)
-                
-                # 添加对象存储的元数据
-                try:
-                    stat = minio_client.stat_object(bucket_name, object_name)
-                    result["ObjectSize"] = stat.size
-                    result["ObjectLastModified"] = stat.last_modified
-                    result["ObjectETag"] = stat.etag
-                except Exception as e:
-                    print(f"Warning: Could not get object stats: {e}")
-                
+                result = await _analyze_file(temp_path)                
                 return ExifToolMetadata.from_exiftool_output(result)
             finally:
                 # 清理临时文件
@@ -227,7 +225,7 @@ async def _analyze_file(file_path: str) -> Dict[str, Any]:
             metadata = et.get_metadata([file_path])
             for d in metadata:
                 file_info = {
-                    "ExifToolVersion": d.get("ExifTool:ExifToolVersion", "N/A"),
+                    "ExifToolVersion": str(d.get("ExifTool:ExifToolVersion", "N/A")),
                     "FileSize": d.get("File:FileSize", "N/A"),
                     "FileModifyDate": d.get("File:FileModifyDate", "N/A"),
                     "FileAccessDate": d.get("File:FileAccessDate", "N/A"),
@@ -240,14 +238,14 @@ async def _analyze_file(file_path: str) -> Dict[str, Any]:
                     "TimeStamp": d.get("EXE:TimeStamp", "N/A"),
                     "ImageFileCharacteristics": d.get("EXE:ImageFileCharacteristics", "N/A"),
                     "PEType": d.get("EXE:PEType", "N/A"),
-                    "LinkerVersion": d.get("EXE:LinkerVersion", "N/A"),
+                    "LinkerVersion": str(d.get("EXE:LinkerVersion", "N/A")),
                     "CodeSize": d.get("EXE:CodeSize", "N/A"),
                     "InitializedDataSize": d.get("EXE:InitializedDataSize", "N/A"),
                     "UninitializedDataSize": d.get("EXE:UninitializedDataSize", "N/A"),
                     "EntryPoint": d.get("EXE:EntryPoint", "N/A"),
-                    "OSVersion": d.get("EXE:OSVersion", "N/A"),
-                    "ImageVersion": d.get("EXE:ImageVersion", "N/A"),
-                    "SubsystemVersion": d.get("EXE:SubsystemVersion", "N/A"),
+                    "OSVersion": str(d.get("EXE:OSVersion", "N/A")),
+                    "ImageVersion": str(d.get("EXE:ImageVersion", "N/A")),
+                    "SubsystemVersion": str(d.get("EXE:SubsystemVersion", "N/A")),
                     "Subsystem": d.get("EXE:Subsystem", "N/A")
                 }
                 

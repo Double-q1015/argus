@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 import sys
 from pathlib import Path
+from tests.fixtures.sample_fixtures import sample_files, sample_metadata
 
 # 添加项目根目录到 Python 路径
 project_root = Path(__file__).parent.parent
@@ -14,7 +15,7 @@ sys.path.insert(0, str(project_root))
 # 设置测试环境变量
 os.environ["TESTING"] = "true"
 os.environ["MONGODB_URL"] = "mongodb://localhost:27017"
-os.environ["MONGODB_DB_NAME"] = "snake_skin_test"
+os.environ["MONGODB_DB_NAME"] = "argus_test"
 
 # 现在导入应用模块
 from app.models.user import User
@@ -91,4 +92,7 @@ def invalid_yara_rule():
 @pytest.fixture
 def test_data_dir():
     """返回测试数据目录路径"""
-    return project_root / "tests" / "data" 
+    return project_root / "tests" / "data"
+
+# 重新导出 fixtures
+__all__ = ['sample_files', 'sample_metadata'] 

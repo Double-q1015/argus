@@ -57,17 +57,11 @@ class ExifToolMetadata(BaseModel):
     subsystem: int = Field(alias="Subsystem")
     subsystem_description: str = Field(alias="SubsystemDescription")
 
-    # MinIO对象存储信息
-    object_size: Optional[int] = Field(None, alias="ObjectSize")
-    object_last_modified: Optional[datetime] = Field(None, alias="ObjectLastModified")
-    object_etag: Optional[str] = Field(None, alias="ObjectETag")
-
     # 验证器
     _parse_file_modify_date = validator("file_modify_date", pre=True, allow_reuse=True)(parse_exiftool_datetime)
     _parse_file_access_date = validator("file_access_date", pre=True, allow_reuse=True)(parse_exiftool_datetime)
     _parse_file_inode_change_date = validator("file_inode_change_date", pre=True, allow_reuse=True)(parse_exiftool_datetime)
     _parse_time_stamp = validator("time_stamp", pre=True, allow_reuse=True)(parse_exiftool_datetime)
-    _parse_object_last_modified = validator("object_last_modified", pre=True, allow_reuse=True)(parse_exiftool_datetime)
 
     class Config:
         """Pydantic配置类"""
