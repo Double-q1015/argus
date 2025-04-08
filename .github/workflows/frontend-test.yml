@@ -1,0 +1,41 @@
+name: Frontend Test
+
+on:
+  push:
+    branches: [ master, main ]
+    paths:
+      - 'argus-vue/**'
+  pull_request:
+    branches: [ master, main ]
+    paths:
+      - 'argus-vue/**'
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        working-directory: ./argus-vue
+        run: npm ci
+        
+      - name: Run linting
+        working-directory: ./argus-vue
+        run: npm run lint
+        
+      - name: Build frontend
+        working-directory: ./argus-vue
+        run: npm run build
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: ./argus-vue/dist

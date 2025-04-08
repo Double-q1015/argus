@@ -118,14 +118,3 @@ jobs:
         with:
           name: frontend-build
           path: ./argus-vue/dist
-
-  deploy:
-    needs: [backend, frontend]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Deploy to production
-        run: |
-          echo "部署到生产环境"
-          # 这里添加您的部署命令
-          # 例如：使用 SSH 连接到服务器并执行部署脚本 
