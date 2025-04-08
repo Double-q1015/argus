@@ -2,9 +2,6 @@
 
 import asyncio
 import sys
-print(sys.path)
-sys.path.pop(-1)
-sys.path.append("/home/ctct/argus")
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 from app.models.user import User, pwd_context

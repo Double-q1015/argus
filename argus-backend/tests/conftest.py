@@ -6,7 +6,6 @@ from datetime import datetime
 import os
 import sys
 from pathlib import Path
-from tests.fixtures.sample_fixtures import sample_files, sample_metadata
 
 # 添加项目根目录到 Python 路径
 project_root = Path(__file__).parent.parent
@@ -22,17 +21,20 @@ from app.models.user import User
 from app.models.yara import YaraRule
 from motor.motor_asyncio import AsyncIOMotorClient
 
+# 导入测试 fixtures
+from tests.fixtures.sample_fixtures import sample_files, sample_metadata
+
 @pytest.fixture(scope="session")
 def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 async def db():
     """创建测试数据库连接"""
     client = AsyncIOMotorClient("mongodb://localhost:27017")
-    db = client["snake_skin_test"]
+    db = client["argus_test"]
     
     # 初始化 Beanie
     await init_beanie(
@@ -95,4 +97,12 @@ def test_data_dir():
     return project_root / "tests" / "data"
 
 # 重新导出 fixtures
-__all__ = ['sample_files', 'sample_metadata'] 
+__all__ = ['sample_files', 'sample_metadata']
+
+def pytest_configure(config):
+    """配置 pytest"""
+    # 设置 asyncio 模式
+    config.option.asyncio_mode = "strict"
+    
+    # 设置 asyncio 默认 fixture 循环作用域
+    config.option.asyncio_default_fixture_loop_scope = "function" 

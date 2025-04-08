@@ -1,10 +1,12 @@
 import os
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
+from minio.error import MinioException
+from urllib3.exceptions import MaxRetryError
 
 from app.core.config import settings
 from app.core.storage import init_storage
@@ -74,58 +76,80 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.on_event("startup")
 async def startup_event():
     """
-    应用启动时初始化数据库连接
+    应用启动时初始化数据库连接和存储服务
     """
-    client = AsyncIOMotorClient(settings.MONGODB_URL)
-    db = client[settings.MONGODB_DB]
-    
-    # 清理现有索引
-    collections = [
-        "samples", "users", "yara_rules", "scales", "api_keys",
-        "tasks", "task_conditions", "task_status", "sample_analysis_status",
-        "analysis_configs", "sample_analyses", "analysis_results", "analysis_schedules",
-        "migration_tasks", "migration_file_status"
-    ]
-    for collection_name in collections:
-        collection = db[collection_name]
-        await collection.drop_indexes()
-    
-    # 初始化Beanie
-    await init_beanie(
-        database=db,
-        document_models=[
-            Sample,
-            User,
-            YaraRule,
-            ApiKey,
-            Task,
-            TaskCondition,
-            TaskStatus,
-            SampleAnalysisStatus,
-            AnalysisConfig,
-            SampleAnalysis,
-            AnalysisResult,
-            AnalysisSchedule,
-            MigrationTask,
-            MigrationFileStatus
-        ],
-        allow_index_dropping=True
-    )
-    
-    await init_storage()
-    # 启动任务调度器
-    start_scheduler()
-    logger.info("应用启动完成，调度器已启动")
+    try:
+        # 初始化MongoDB连接
+        client = AsyncIOMotorClient(settings.MONGODB_URL, serverSelectionTimeoutMS=5000)
+        # 测试连接
+        await client.server_info()
+        db = client[settings.MONGODB_DB]
+        
+        # 清理现有索引
+        collections = [
+            "samples", "users", "yara_rules", "scales", "api_keys",
+            "tasks", "task_conditions", "task_status", "sample_analysis_status",
+            "analysis_configs", "sample_analyses", "analysis_results", "analysis_schedules",
+            "migration_tasks", "migration_file_status"
+        ]
+        for collection_name in collections:
+            collection = db[collection_name]
+            await collection.drop_indexes()
+        
+        # 初始化Beanie
+        await init_beanie(
+            database=db,
+            document_models=[
+                Sample,
+                User,
+                YaraRule,
+                ApiKey,
+                Task,
+                TaskCondition,
+                TaskStatus,
+                SampleAnalysisStatus,
+                AnalysisConfig,
+                SampleAnalysis,
+                AnalysisResult,
+                AnalysisSchedule,
+                MigrationTask,
+                MigrationFileStatus
+            ]
+        )
+        logger.info("Successfully connected to MongoDB")
+        
+        # 初始化存储服务
+        try:
+            await init_storage()
+            logger.info("Successfully initialized storage service")
+        except (MinioException, MaxRetryError) as e:
+            logger.error(f"Failed to initialize storage service: {str(e)}")
+            # 存储服务初始化失败不影响应用启动
+            pass
+        
+        # 启动调度器
+        start_scheduler()
+        logger.info("Scheduler started successfully")
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize application: {str(e)}")
+        # 如果是MongoDB连接失败，返回503错误
+        if isinstance(e, Exception):
+            raise HTTPException(
+                status_code=503,
+                detail="Service temporarily unavailable. Database connection failed."
+            )
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """
-    应用关闭时关闭数据库连接
+    应用关闭时清理资源
     """
-    client = AsyncIOMotorClient(settings.MONGODB_URL)
-    client.close()
-    # 停止任务调度器
-    stop_scheduler()
+    try:
+        stop_scheduler()
+        logger.info("Scheduler stopped successfully")
+    except Exception as e:
+        logger.error(f"Error stopping scheduler: {str(e)}")
 
 @app.get("/")
 async def root():
@@ -137,10 +161,32 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return JSONResponse(
-        content={
+    """
+    健康检查端点
+    """
+    try:
+        # 检查MongoDB连接
+        client = AsyncIOMotorClient(settings.MONGODB_URL, serverSelectionTimeoutMS=5000)
+        await client.server_info()
+        
+        # 检查存储服务
+        storage_status = "unknown"
+        try:
+            await init_storage()
+            storage_status = "healthy"
+        except Exception:
+            storage_status = "unhealthy"
+        
+        return {
             "status": "healthy",
-            "version": settings.VERSION
-        },
-        status_code=200
-    ) 
+            "mongodb": "connected",
+            "storage": storage_status
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "error": str(e)
+            }
+        ) 

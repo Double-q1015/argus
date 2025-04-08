@@ -30,16 +30,11 @@ except ImportError:
 
 class HashResult(BaseModel):
     """哈希分析结果"""
-    file_path: Optional[str] = None
     file_size: int
     md5: str
     sha1: str
     sha256: str
     sha512: str
-    blake2b: str
-    blake2s: str
-    sha3_256: str
-    sha3_512: str
     crc32: str
     ssdeep: Optional[str] = None
     tlsh: Optional[str] = None
@@ -72,7 +67,8 @@ def calculate_ssdeep(data: bytes) -> Optional[str]:
     
     try:
         return ssdeep.hash(data)
-    except Exception:
+    except Exception as e:
+        print(f"SSDEEP计算错误: {e}")
         return None
 
 def calculate_tlsh(data: bytes) -> Optional[str]:
@@ -89,11 +85,10 @@ def calculate_tlsh(data: bytes) -> Optional[str]:
         return None
     
     try:
-        h3 = tlsh.Tlsh()
-        h3.update(data)
-        h3.final()
-        return h3.hexdigest()
-    except Exception:
+        h3 = tlsh.hash(data)
+        return h3
+    except Exception as e:
+        print(f"TLSH计算错误: {e}")
         return None
 
 def calculate_hashes(data: bytes) -> Dict[str, str]:
@@ -113,10 +108,6 @@ def calculate_hashes(data: bytes) -> Dict[str, str]:
                 "sha1": "",
                 "sha256": "",
                 "sha512": "",
-                "blake2b": "",
-                "blake2s": "",
-                "sha3_256": "",
-                "sha3_512": "",
                 "crc32": "",
                 "ssdeep": None,
                 "tlsh": None
@@ -127,10 +118,6 @@ def calculate_hashes(data: bytes) -> Dict[str, str]:
         sha1_hash = hashlib.sha1(data).hexdigest()
         sha256_hash = hashlib.sha256(data).hexdigest()
         sha512_hash = hashlib.sha512(data).hexdigest()
-        blake2b_hash = hashlib.blake2b(data).hexdigest()
-        blake2s_hash = hashlib.blake2s(data).hexdigest()
-        sha3_256_hash = hashlib.sha3_256(data).hexdigest()
-        sha3_512_hash = hashlib.sha3_512(data).hexdigest()
         crc32_hash = calculate_crc32(data)
         ssdeep_hash = calculate_ssdeep(data)
         tlsh_hash = calculate_tlsh(data)
@@ -140,10 +127,6 @@ def calculate_hashes(data: bytes) -> Dict[str, str]:
             "sha1": sha1_hash,
             "sha256": sha256_hash,
             "sha512": sha512_hash,
-            "blake2b": blake2b_hash,
-            "blake2s": blake2s_hash,
-            "sha3_256": sha3_256_hash,
-            "sha3_512": sha3_512_hash,
             "crc32": crc32_hash,
             "ssdeep": ssdeep_hash,
             "tlsh": tlsh_hash
@@ -155,10 +138,6 @@ def calculate_hashes(data: bytes) -> Dict[str, str]:
             "sha1": "",
             "sha256": "",
             "sha512": "",
-            "blake2b": "",
-            "blake2s": "",
-            "sha3_256": "",
-            "sha3_512": "",
             "crc32": "",
             "ssdeep": None,
             "tlsh": None,
@@ -180,16 +159,11 @@ def calculate_file_hashes(file_path: str, max_size: int = 1024 * 1024 * 100) -> 
         # 检查文件是否存在
         if not os.path.exists(file_path):
             return HashResult(
-                file_path=file_path,
                 file_size=0,
                 md5="",
                 sha1="",
                 sha256="",
                 sha512="",
-                blake2b="",
-                blake2s="",
-                sha3_256="",
-                sha3_512="",
                 crc32="",
                 ssdeep=None,
                 tlsh=None,
@@ -207,10 +181,6 @@ def calculate_file_hashes(file_path: str, max_size: int = 1024 * 1024 * 100) -> 
         sha1_obj = hashlib.sha1()
         sha256_obj = hashlib.sha256()
         sha512_obj = hashlib.sha512()
-        blake2b_obj = hashlib.blake2b()
-        blake2s_obj = hashlib.blake2s()
-        sha3_256_obj = hashlib.sha3_256()
-        sha3_512_obj = hashlib.sha3_512()
         
         # 用于计算CRC32的数据
         crc32_data = bytearray()
@@ -231,10 +201,6 @@ def calculate_file_hashes(file_path: str, max_size: int = 1024 * 1024 * 100) -> 
                 sha1_obj.update(chunk)
                 sha256_obj.update(chunk)
                 sha512_obj.update(chunk)
-                blake2b_obj.update(chunk)
-                blake2s_obj.update(chunk)
-                sha3_256_obj.update(chunk)
-                sha3_512_obj.update(chunk)
                 
                 # 收集数据用于其他哈希计算
                 crc32_data.extend(chunk)
@@ -245,16 +211,11 @@ def calculate_file_hashes(file_path: str, max_size: int = 1024 * 1024 * 100) -> 
         
         # 计算最终哈希值
         return HashResult(
-            file_path=file_path,
             file_size=file_size,
             md5=md5_obj.hexdigest(),
             sha1=sha1_obj.hexdigest(),
             sha256=sha256_obj.hexdigest(),
             sha512=sha512_obj.hexdigest(),
-            blake2b=blake2b_obj.hexdigest(),
-            blake2s=blake2s_obj.hexdigest(),
-            sha3_256=sha3_256_obj.hexdigest(),
-            sha3_512=sha3_512_obj.hexdigest(),
             crc32=calculate_crc32(bytes(crc32_data)),
             ssdeep=calculate_ssdeep(bytes(ssdeep_data)),
             tlsh=calculate_tlsh(bytes(tlsh_data))
@@ -262,69 +223,16 @@ def calculate_file_hashes(file_path: str, max_size: int = 1024 * 1024 * 100) -> 
     
     except Exception as e:
         return HashResult(
-            file_path=file_path,
             file_size=0,
             md5="",
             sha1="",
             sha256="",
             sha512="",
-            blake2b="",
-            blake2s="",
-            sha3_256="",
-            sha3_512="",
             crc32="",
             ssdeep=None,
             tlsh=None,
             error_message=str(e)
         )
-
-def calculate_authentihash(file_path: str) -> str:
-    """
-    计算数据的AuthentiHash哈希值
-    
-    Args:
-        data: 要计算哈希的数据
-        
-    Returns:
-        str: AuthentiHash哈希值
-    """
-    pass
-
-def calculate_richhash(file_path: str) -> str:
-    """
-    计算数据的RichHash哈希值
-    
-    Args:
-        file_path: 文件路径
-        
-    Returns:
-        str: RichHash哈希值
-    """
-    pass
-
-def calculate_impfuzzy(file_path: str) -> Optional[str]:
-    """
-    计算数据的impfuzzy哈希值
-    
-    Args:
-        file_path: 文件路径
-        
-    Returns:
-        Optional[str]: impfuzzy哈希值
-    """
-    pass
-
-def calculate_imphash(file_path: str) -> str:
-    """
-    计算数据的ImpHash哈希值
-    
-    Args:
-        file_path: 文件路径
-        
-    Returns:
-        str: ImpHash哈希值
-    """
-    pass
 
 def calculate_minio_file_hashes(
     minio_client: Minio,
@@ -351,16 +259,11 @@ def calculate_minio_file_hashes(
             file_size = stat.size
         except S3Error as e:
             return HashResult(
-                file_path=None,
                 file_size=0,
                 md5="",
                 sha1="",
                 sha256="",
                 sha512="",
-                blake2b="",
-                blake2s="",
-                sha3_256="",
-                sha3_512="",
                 crc32="",
                 ssdeep=None,
                 tlsh=None,
@@ -375,16 +278,11 @@ def calculate_minio_file_hashes(
             data_stream = minio_client.get_object(bucket_name, object_name)
         except S3Error as e:
             return HashResult(
-                file_path=None,
                 file_size=file_size,
                 md5="",
                 sha1="",
                 sha256="",
                 sha512="",
-                blake2b="",
-                blake2s="",
-                sha3_256="",
-                sha3_512="",
                 crc32="",
                 ssdeep=None,
                 tlsh=None,
@@ -396,10 +294,6 @@ def calculate_minio_file_hashes(
         sha1_obj = hashlib.sha1()
         sha256_obj = hashlib.sha256()
         sha512_obj = hashlib.sha512()
-        blake2b_obj = hashlib.blake2b()
-        blake2s_obj = hashlib.blake2s()
-        sha3_256_obj = hashlib.sha3_256()
-        sha3_512_obj = hashlib.sha3_512()
         
         # 用于计算CRC32的数据
         crc32_data = bytearray()
@@ -422,10 +316,6 @@ def calculate_minio_file_hashes(
             sha1_obj.update(chunk)
             sha256_obj.update(chunk)
             sha512_obj.update(chunk)
-            blake2b_obj.update(chunk)
-            blake2s_obj.update(chunk)
-            sha3_256_obj.update(chunk)
-            sha3_512_obj.update(chunk)
             
             # 收集数据用于其他哈希计算
             crc32_data.extend(chunk)
@@ -435,16 +325,11 @@ def calculate_minio_file_hashes(
         
         # 计算最终哈希值
         return HashResult(
-            file_path=None,
             file_size=file_size,
             md5=md5_obj.hexdigest(),
             sha1=sha1_obj.hexdigest(),
             sha256=sha256_obj.hexdigest(),
             sha512=sha512_obj.hexdigest(),
-            blake2b=blake2b_obj.hexdigest(),
-            blake2s=blake2s_obj.hexdigest(),
-            sha3_256=sha3_256_obj.hexdigest(),
-            sha3_512=sha3_512_obj.hexdigest(),
             crc32=calculate_crc32(bytes(crc32_data)),
             ssdeep=calculate_ssdeep(bytes(ssdeep_data)),
             tlsh=calculate_tlsh(bytes(tlsh_data)),
@@ -452,16 +337,11 @@ def calculate_minio_file_hashes(
     
     except Exception as e:
         return HashResult(
-            file_path=None,
             file_size=0,
             md5="",
             sha1="",
             sha256="",
             sha512="",
-            blake2b="",
-            blake2s="",
-            sha3_256="",
-            sha3_512="",
             crc32="",
             ssdeep=None,
             tlsh=None,
@@ -598,7 +478,7 @@ def verify_file_hash(file_path: str, hash_type: str, expected_hash: str) -> Dict
     
     Args:
         file_path: 文件路径
-        hash_type: 哈希类型 (md5, sha1, sha256, sha512, blake2b, blake2s, sha3_256, sha3_512, crc32, ssdeep, tlsh, authentihash, richhash, impfuzzy, imphash)
+        hash_type: 哈希类型 (md5, sha1, sha256, sha512, crc32, ssdeep, tlsh)
         expected_hash: 预期的哈希值
         
     Returns:
@@ -631,14 +511,6 @@ def verify_file_hash(file_path: str, hash_type: str, expected_hash: str) -> Dict
             calculated_hash = hashlib.sha256(data).hexdigest()
         elif hash_type.lower() == "sha512":
             calculated_hash = hashlib.sha512(data).hexdigest()
-        elif hash_type.lower() == "blake2b":
-            calculated_hash = hashlib.blake2b(data).hexdigest()
-        elif hash_type.lower() == "blake2s":
-            calculated_hash = hashlib.blake2s(data).hexdigest()
-        elif hash_type.lower() == "sha3_256":
-            calculated_hash = hashlib.sha3_256(data).hexdigest()
-        elif hash_type.lower() == "sha3_512":
-            calculated_hash = hashlib.sha3_512(data).hexdigest()
         elif hash_type.lower() == "crc32":
             calculated_hash = calculate_crc32(data)
         elif hash_type.lower() == "ssdeep":
@@ -661,22 +533,6 @@ def verify_file_hash(file_path: str, hash_type: str, expected_hash: str) -> Dict
                     "expected_hash": expected_hash,
                     "hash_type": hash_type
                 }
-        elif hash_type.lower() == "authentihash":
-            calculated_hash = calculate_authentihash(data)
-        elif hash_type.lower() == "richhash":
-            calculated_hash = calculate_richhash(data)
-        elif hash_type.lower() == "impfuzzy":
-            calculated_hash = calculate_impfuzzy(data)
-            if calculated_hash is None:
-                return {
-                    "verified": False,
-                    "error": "SSDEEP库不可用",
-                    "calculated_hash": "",
-                    "expected_hash": expected_hash,
-                    "hash_type": hash_type
-                }
-        elif hash_type.lower() == "imphash":
-            calculated_hash = calculate_imphash(data)
         else:
             return {
                 "verified": False,
@@ -721,7 +577,7 @@ def verify_minio_file_hash(
         minio_client: MinIO客户端
         bucket_name: 存储桶名称
         object_name: 对象名称
-        hash_type: 哈希类型 (md5, sha1, sha256, sha512, blake2b, blake2s, sha3_256, sha3_512, crc32, ssdeep, tlsh, authentihash, richhash, impfuzzy, imphash)
+        hash_type: 哈希类型 (md5, sha1, sha256, sha512, crc32, ssdeep, tlsh)
         expected_hash: 预期的哈希值
         max_size: 最大计算大小，超过此大小将只计算前max_size字节
         
@@ -781,14 +637,6 @@ def verify_minio_file_hash(
             calculated_hash = hashlib.sha256(bytes(data)).hexdigest()
         elif hash_type.lower() == "sha512":
             calculated_hash = hashlib.sha512(bytes(data)).hexdigest()
-        elif hash_type.lower() == "blake2b":
-            calculated_hash = hashlib.blake2b(bytes(data)).hexdigest()
-        elif hash_type.lower() == "blake2s":
-            calculated_hash = hashlib.blake2s(bytes(data)).hexdigest()
-        elif hash_type.lower() == "sha3_256":
-            calculated_hash = hashlib.sha3_256(bytes(data)).hexdigest()
-        elif hash_type.lower() == "sha3_512":
-            calculated_hash = hashlib.sha3_512(bytes(data)).hexdigest()
         elif hash_type.lower() == "crc32":
             calculated_hash = calculate_crc32(bytes(data))
         elif hash_type.lower() == "ssdeep":
@@ -811,22 +659,6 @@ def verify_minio_file_hash(
                     "expected_hash": expected_hash,
                     "hash_type": hash_type
                 }
-        elif hash_type.lower() == "authentihash":
-            calculated_hash = calculate_authentihash(bytes(data))
-        elif hash_type.lower() == "richhash":
-            calculated_hash = calculate_richhash(bytes(data))
-        elif hash_type.lower() == "impfuzzy":
-            calculated_hash = calculate_impfuzzy(bytes(data))
-            if calculated_hash is None:
-                return {
-                    "verified": False,
-                    "error": "SSDEEP库不可用",
-                    "calculated_hash": "",
-                    "expected_hash": expected_hash,
-                    "hash_type": hash_type
-                }
-        elif hash_type.lower() == "imphash":
-            calculated_hash = calculate_imphash(bytes(data))
         else:
             return {
                 "verified": False,
@@ -859,8 +691,8 @@ def verify_minio_file_hash(
 
 if __name__ == "__main__":
     # 测试calculate_pehashng
-    file_path = "/data/004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
-    pehashng = calculate_pehashng(file_path)
-    print(f"peHashNG: {pehashng}")
+    file_path = "argus-backend/tests/data/samples/malware/004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
+    hash_result = calculate_file_hashes(file_path)
+    print(f"peHashNG: {hash_result}")
     
     

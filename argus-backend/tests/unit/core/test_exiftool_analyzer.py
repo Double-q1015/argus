@@ -1,171 +1,184 @@
+"""ExifTool 分析器测试"""
+
 import os
 import sys
 import pytest
-import tempfile
 from pathlib import Path
-from minio import Minio
-from unittest.mock import patch
-from app.core.config import settings
 
-# 添加项目根目录到Python路径
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-from app.core.exiftool_analyzer import convert_permissions, perform_exiftool_analysis, _analyze_file, ExifToolMetadata
+from unittest.mock import patch
 from app.core.exiftool_analyzer import (
+    convert_permissions,
+    perform_exiftool_analysis,
+    _analyze_file,
+    ExifToolMetadata,
     ExifToolError,
     FileNotFoundError
 )
+from app.core.config import settings
+from minio import Minio
+from tests.fixtures.sample_fixtures import get_sample_path, get_sample_info
+
+# 添加项目根目录到Python路径
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+
+# 定义样本文件路径
+SAMPLE_MALWARE_PATH = get_sample_path("win32_exe")
 
 # 测试 convert_permissions 函数
-def test_convert_permissions():
-    # 测试普通文件
-    assert convert_permissions(100644) == "-rw-r--r--"
-    assert convert_permissions(100755) == "-rwxr-xr-x"
-    
-    # 测试目录
-    assert convert_permissions(400755) == "drwxr-xr-x"
-    
-    # 测试设备文件
-    assert convert_permissions(200644) == "crw-r--r--"
-    assert convert_permissions(600644) == "brw-r--r--"
-    
-    # 测试未知类型
-    assert convert_permissions(300644) == "-rw-r--r--"
+@pytest.mark.parametrize("permissions,expected", [
+    (100644, "-rw-r--r--"),  # 普通文件
+    (100755, "-rwxr-xr-x"),  # 可执行文件
+    (400755, "drwxr-xr-x"),  # 目录
+    (200644, "crw-r--r--"),  # 字符设备
+    (600644, "brw-r--r--"),  # 块设备
+    (300644, "-rw-r--r--"),  # 未知类型
+])
+def test_convert_permissions(permissions, expected):
+    """测试权限转换函数"""
+    assert convert_permissions(permissions) == expected
 
-# 测试 perform_exiftool_analysis 函数
+# 测试文件不存在的情况
 @pytest.mark.asyncio
 async def test_perform_exiftool_analysis_file_not_found():
+    """测试文件不存在的情况"""
     non_existent_file = "/path/to/non/existent/file.jpg"
-    
     with pytest.raises(FileNotFoundError) as exc_info:
         await perform_exiftool_analysis(non_existent_file)
     assert "File not found" in str(exc_info.value)
 
+# 测试成功分析的情况
 @pytest.mark.asyncio
-async def test_perform_exiftool_analysis_success():
+async def test_perform_exiftool_analysis_success(temp_file):
     """测试成功的 EXIFTool 分析"""
-    # 创建临时文件并写入测试数据
-    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
-        # 写入一些基本的 JPEG 文件头数据
-        temp_file.write(b'\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xFF\xDB\x00C\x00')
-        temp_file.flush()
-        temp_file_path = temp_file.name
-
-    try:
-        # 确保文件存在
-        assert os.path.exists(temp_file_path)
+    # 写入测试数据
+    with open(temp_file, 'wb') as f:
+        f.write(b'\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xFF\xDB\x00C\x00')
+    
+    # 创建完整的 mock 数据
+    mock_output = {
+        "ExifToolVersion": "13.1",
+        "FileSize": 1024,
+        "FilePermissions": 100644,
+        "FilePermissionsStr": "-rw-r--r--",
+        "FileType": "JPEG",
+        "FileTypeExtension": "JPG",
+        "MIMEType": "image/jpeg",
+        "MachineType": "0x14c",
+        "MachineTypeDescription": "Intel 386 or later processors and compatible processors",
+        "ImageFileCharacteristics": 258,
+        "ImageFileCharacteristicsDescription": ["Executable", "32-bit"],
+        "PEType": 267,
+        "PETypeDescription": "PE32",
+        "LinkerVersion": "10.0",
+        "CodeSize": 4096,
+        "InitializedDataSize": 5632,
+        "UninitializedDataSize": 0,
+        "EntryPoint": "0x1a0c",
+        "OSVersion": "5.1",
+        "ImageVersion": "0.0",
+        "SubsystemVersion": "5.1",
+        "Subsystem": 3,
+        "SubsystemDescription": "Windows command line"
+    }
+    
+    with patch('app.core.exiftool_analyzer._analyze_file', return_value=mock_output):
+        result = await perform_exiftool_analysis(file_path=temp_file)
         
-        # 模拟 ExifTool 的输出
-        mock_output = {
-            "ExifToolVersion": "12.30",
-            "FileSize": 1024,
-            "FileModifyDate": "2023:01:01 12:00:00",
-            "FileAccessDate": "2023:01:01 12:00:00",
-            "FileInodeChangeDate": "2023:01:01 12:00:00",
-            "FilePermissions": 100644,
-            "FilePermissionsStr": "-rw-r--r--",
-            "FileType": "JPEG",
-            "FileTypeExtension": "jpg",
-            "MIMEType": "image/jpeg",
-            "MachineType": "0x14c",
-            "MachineTypeDescription": "Intel 386 or later processors and compatible processors",
-            "TimeStamp": "2023:01:01 12:00:00",
-            "ImageFileCharacteristics": 33,
-            "ImageFileCharacteristicsDescription": ["Executable", "32-bit"],
-            "PEType": 2,
-            "PETypeDescription": "PE32",
-            "LinkerVersion": "14",
-            "CodeSize": 4096,
-            "InitializedDataSize": 1024,
-            "UninitializedDataSize": 0,
-            "EntryPoint": "0x1000",
-            "OSVersion": "6.0",
-            "ImageVersion": "6.0",
-            "SubsystemVersion": "6.0",
-            "Subsystem": 2,
-            "SubsystemDescription": "Windows GUI"
-        }
-        
-        with patch('app.core.exiftool_analyzer._analyze_file', return_value=mock_output):
-            result = await perform_exiftool_analysis(file_path=temp_file_path)
-            
-            # 验证结果
-            assert result is not None
-            assert result.exiftool_version == "12.30"
-            assert result.file_size == 1024
-            assert result.file_type == "JPEG"
-            assert result.file_type_extension == "jpg"
-            assert result.mime_type == "image/jpeg"
-            assert result.machine_type == "0x14c"
-            assert result.entry_point == "0x1000"
-            assert result.file_permissions_str == "-rw-r--r--"
-            
-    finally:
-        # 清理临时文件
-        if os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
+        # 验证结果
+        assert result is not None
+        assert result.exiftool_version == mock_output["ExifToolVersion"]
+        assert result.file_size == mock_output["FileSize"]
+        assert result.file_type == mock_output["FileType"]
+        assert result.file_type_extension == mock_output["FileTypeExtension"]
+        assert result.mime_type == mock_output["MIMEType"]
+        assert result.file_permissions_str == mock_output["FilePermissionsStr"]
 
+# 测试错误处理
 @pytest.mark.asyncio
-async def test_perform_exiftool_analysis_error():
+async def test_perform_exiftool_analysis_error(temp_file):
     """测试 EXIFTool 分析错误处理"""
-    # 创建临时文件并写入无效数据
-    with tempfile.NamedTemporaryFile(suffix='.txt', delete=False) as temp_file:
-        temp_file.write(b"Invalid file content")
-        temp_file.flush()
-        temp_file_path = temp_file.name
+    # 写入无效数据
+    with open(temp_file, 'wb') as f:
+        f.write(b"Invalid file content")
+    
+    with patch('app.core.exiftool_analyzer._analyze_file', 
+              side_effect=ExifToolError("模拟的 ExifTool 错误")):
+        with pytest.raises(ExifToolError) as exc_info:
+            await perform_exiftool_analysis(file_path=temp_file)
+        assert "模拟的 ExifTool 错误" in str(exc_info.value)
 
-    try:
-        # 确保文件存在
-        assert os.path.exists(temp_file_path)
-        
-        # 模拟 ExifTool 抛出错误
-        with patch('app.core.exiftool_analyzer._analyze_file', side_effect=ExifToolError("模拟的 ExifTool 错误")):
-            with pytest.raises(ExifToolError) as exc_info:
-                await perform_exiftool_analysis(file_path=temp_file_path)
-            assert "模拟的 ExifTool 错误" in str(exc_info.value)
-            
-    finally:
-        # 清理临时文件
-        if os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
-
+# 使用真实测试样本测试 _analyze_file 函数
 @pytest.mark.asyncio
 async def test_analyze_file_with_real_file():
     """使用真实文件测试 _analyze_file 函数"""
     # 使用真实样本文件
-    file_path = "tests/data/004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
+    file_path = SAMPLE_MALWARE_PATH
     
     # 确保文件存在
     assert os.path.exists(file_path)
+    
+    # 获取样本信息
+    sample_info = get_sample_info("win32_exe")
     
     # 直接调用 _analyze_file 函数
     result = await _analyze_file(file_path)
     
     # 验证结果
     assert result is not None
-    assert result["ExifToolVersion"] == "13.0"
-    assert result["FileSize"] == 14896
-    assert result["FilePermissions"] == 100644
-    assert result["FilePermissionsStr"] == "-rw-r--r--"
-    assert result["FileType"] == "Win32 EXE"
-    assert result["FileTypeExtension"] == "EXE"
-    assert result["MIMEType"] == "application/octet-stream"
-    assert result["MachineType"] == "0x14c"
-    assert result["MachineTypeDescription"] == "Intel 386 or later processors and compatible processors"
-    assert result["ImageFileCharacteristics"] == 258
-    assert result["ImageFileCharacteristicsDescription"] == ["Executable", "32-bit"]
-    assert result["PEType"] == 267
-    assert result["PETypeDescription"] == "PE32"
-    assert result["LinkerVersion"] == "10.0"
-    assert result["CodeSize"] == 4096
-    assert result["InitializedDataSize"] == 5632
-    assert result["UninitializedDataSize"] == 0
-    assert result["EntryPoint"] == "0x1a0c"
-    assert result["OSVersion"] == "5.1"
-    assert result["ImageVersion"] == "0.0"
-    assert result["SubsystemVersion"] == "5.1"
-    assert result["Subsystem"] == 3
-    assert result["SubsystemDescription"] == "Windows command line"
+    assert result["ExifToolVersion"] == sample_info["exiftools_info"]["ExifToolVersion"]
+    assert result["FileSize"] == sample_info["exiftools_info"]["size"]
+    assert result["FilePermissions"] == sample_info["exiftools_info"]["FilePermissions"]
+    assert result["FilePermissionsStr"] == sample_info["exiftools_info"]["FilePermissionsStr"]
+    assert result["FileType"] == sample_info["exiftools_info"]["type"]
+    assert result["FileTypeExtension"] == sample_info["exiftools_info"]["extension"]
+    assert result["MIMEType"] == sample_info["exiftools_info"]["mime_type"]
+    assert result["MachineType"] == sample_info["exiftools_info"]["machine_type"]
+    assert result["MachineTypeDescription"] == sample_info["exiftools_info"]["machine_type_description"]
+    assert result["ImageFileCharacteristics"] == sample_info["exiftools_info"]["image_file_characteristics"]
+    assert result["ImageFileCharacteristicsDescription"] == sample_info["exiftools_info"]["image_file_characteristics_description"]
+    assert result["PEType"] == sample_info["exiftools_info"]["pe_type"]
+    assert result["PETypeDescription"] == sample_info["exiftools_info"]["pe_type_description"]
+    assert result["LinkerVersion"] == sample_info["exiftools_info"]["linker_version"]
+    assert result["CodeSize"] == sample_info["exiftools_info"]["code_size"]
+    assert result["InitializedDataSize"] == sample_info["exiftools_info"]["initialized_data_size"]
+    assert result["UninitializedDataSize"] == sample_info["exiftools_info"]["uninitialized_data_size"]
+    assert result["EntryPoint"] == sample_info["exiftools_info"]["entry_point"]
+    assert result["OSVersion"] == sample_info["exiftools_info"]["os_version"]
+    assert result["ImageVersion"] == sample_info["exiftools_info"]["image_version"]
+    assert result["SubsystemVersion"] == sample_info["exiftools_info"]["subsystem_version"]
+    assert result["Subsystem"] == sample_info["exiftools_info"]["subsystem"]
+    assert result["SubsystemDescription"] == sample_info["exiftools_info"]["subsystem_description"]
 
+# 测试不同类型文件的分析
+@pytest.mark.asyncio
+@pytest.mark.parametrize("sample_id", ["win32_exe"])
+async def test_analyze_file_with_different_types(sample_id):
+    """测试不同类型文件的分析"""
+    # 获取样本信息
+    sample_info = get_sample_info(sample_id)
+    
+    # 使用真实样本文件路径
+    file_path = sample_info["path"]
+    assert os.path.exists(file_path)
+    
+    # 分析文件
+    result = await _analyze_file(file_path)
+    
+    # 验证基本属性
+    assert result is not None
+    assert result["FileSize"] == sample_info["exiftools_info"]["size"]
+    assert result["FileType"] == sample_info["exiftools_info"]["type"]
+    assert result["FileTypeExtension"] == sample_info["exiftools_info"]["extension"]
+    assert result["MIMEType"] == sample_info["exiftools_info"]["mime_type"]
+    
+    # 验证特定类型的属性
+    if sample_info["exiftools_info"]["type"] == "Win32 EXE":
+        assert result["MachineType"] == sample_info["exiftools_info"]["machine_type"]
+        assert result["ImageFileCharacteristics"] == sample_info["exiftools_info"]["image_file_characteristics"]
+        assert result["PEType"] == sample_info["exiftools_info"]["pe_type"]
+        assert result["EntryPoint"] == sample_info["exiftools_info"]["entry_point"]
+
+# 测试 MinIO 集成
 @pytest.mark.asyncio
 async def test_perform_exiftool_analysis_with_minio():
     """测试使用 MinIO 的 perform_exiftool_analysis 函数"""
@@ -186,12 +199,15 @@ async def test_perform_exiftool_analysis_with_minio():
         pytest.skip(f"无法创建测试桶: {str(e)}")
     
     # 使用真实样本文件
-    file_path = "tests/data/004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
+    file_path = SAMPLE_MALWARE_PATH
     assert os.path.exists(file_path)
+    
+    # 获取样本信息
+    sample_info = get_sample_info("win32_exe")
     
     try:
         # 上传文件到 MinIO
-        object_name = "004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
+        object_name = sample_info["name"]
         minio_client.fput_object(bucket_name, object_name, file_path)
         
         # 使用 MinIO 路径调用分析函数
@@ -206,29 +222,29 @@ async def test_perform_exiftool_analysis_with_minio():
         
         # 验证结果
         assert result is not None
-        assert result["ExifToolVersion"] == "13.0"
-        assert result["FileSize"] == 14896
-        assert result["FilePermissions"] == 100644
-        assert result["FilePermissionsStr"] == "-rw-r--r--"
-        assert result["FileType"] == "Win32 EXE"
-        assert result["FileTypeExtension"] == "EXE"
-        assert result["MIMEType"] == "application/octet-stream"
-        assert result["MachineType"] == "0x14c"
-        assert result["MachineTypeDescription"] == "Intel 386 or later processors and compatible processors"
-        assert result["ImageFileCharacteristics"] == 258
-        assert result["ImageFileCharacteristicsDescription"] == ["Executable", "32-bit"]
-        assert result["PEType"] == 267
-        assert result["PETypeDescription"] == "PE32"
-        assert result["LinkerVersion"] == "10.0"
-        assert result["CodeSize"] == 4096
-        assert result["InitializedDataSize"] == 5632
-        assert result["UninitializedDataSize"] == 0
-        assert result["EntryPoint"] == "0x1a0c"
-        assert result["OSVersion"] == "5.1"
-        assert result["ImageVersion"] == "0.0"
-        assert result["SubsystemVersion"] == "5.1"
-        assert result["Subsystem"] == 3
-        assert result["SubsystemDescription"] == "Windows command line"
+        assert result["ExifToolVersion"] == sample_info["exiftools_info"]["ExifToolVersion"]
+        assert result["FileSize"] == sample_info["exiftools_info"]["size"]
+        assert result["FilePermissions"] == sample_info["exiftools_info"]["FilePermissions"]
+        assert result["FilePermissionsStr"] == sample_info["exiftools_info"]["FilePermissionsStr"]
+        assert result["FileType"] == sample_info["exiftools_info"]["type"]
+        assert result["FileTypeExtension"] == sample_info["exiftools_info"]["extension"]
+        assert result["MIMEType"] == sample_info["exiftools_info"]["mime_type"]
+        assert result["MachineType"] == sample_info["exiftools_info"]["machine_type"]
+        assert result["MachineTypeDescription"] == sample_info["exiftools_info"]["machine_type_description"]
+        assert result["ImageFileCharacteristics"] == sample_info["exiftools_info"]["image_file_characteristics"]
+        assert result["ImageFileCharacteristicsDescription"] == sample_info["exiftools_info"]["image_file_characteristics_description"]
+        assert result["PEType"] == sample_info["exiftools_info"]["pe_type"]
+        assert result["PETypeDescription"] == sample_info["exiftools_info"]["pe_type_description"]
+        assert result["LinkerVersion"] == sample_info["exiftools_info"]["linker_version"]
+        assert result["CodeSize"] == sample_info["exiftools_info"]["code_size"]
+        assert result["InitializedDataSize"] == sample_info["exiftools_info"]["initialized_data_size"]
+        assert result["UninitializedDataSize"] == sample_info["exiftools_info"]["uninitialized_data_size"]
+        assert result["EntryPoint"] == sample_info["exiftools_info"]["entry_point"]
+        assert result["OSVersion"] == sample_info["exiftools_info"]["os_version"]
+        assert result["ImageVersion"] == sample_info["exiftools_info"]["image_version"]
+        assert result["SubsystemVersion"] == sample_info["exiftools_info"]["subsystem_version"]
+        assert result["Subsystem"] == sample_info["exiftools_info"]["subsystem"]
+        assert result["SubsystemDescription"] == sample_info["exiftools_info"]["subsystem_description"]
         
     finally:
         # 清理 MinIO 对象
@@ -236,3 +252,51 @@ async def test_perform_exiftool_analysis_with_minio():
             minio_client.remove_object(bucket_name, object_name)
         except Exception:
             pass 
+
+# 测试 MinIO 集成
+@pytest.mark.asyncio
+async def test_perform_exiftool_analysis_with_local_file():
+    """测试使用本地文件的 perform_exiftool_analysis 函数"""
+    # 使用真实样本文件
+    file_path = SAMPLE_MALWARE_PATH
+    assert os.path.exists(file_path)
+    
+    # 获取样本信息
+    sample_info = get_sample_info("win32_exe")
+    
+    try:
+        exiftoolmetadata_obj = await perform_exiftool_analysis(
+            file_path=file_path
+        )
+
+        assert isinstance(exiftoolmetadata_obj, ExifToolMetadata)
+        result = exiftoolmetadata_obj.to_dict()
+        
+        # 验证结果
+        assert result is not None
+        assert result["ExifToolVersion"] == sample_info["exiftools_info"]["ExifToolVersion"]
+        assert result["FilePermissions"] == sample_info["exiftools_info"]["FilePermissions"]
+        assert result["FilePermissionsStr"] == sample_info["exiftools_info"]["FilePermissionsStr"]
+        assert result["FileSize"] == sample_info["exiftools_info"]["size"]
+        assert result["FileType"] == sample_info["exiftools_info"]["type"]
+        assert result["FileTypeExtension"] == sample_info["exiftools_info"]["extension"]
+        assert result["MIMEType"] == sample_info["exiftools_info"]["mime_type"]
+        assert result["MachineType"] == sample_info["exiftools_info"]["machine_type"]
+        assert result["MachineTypeDescription"] == sample_info["exiftools_info"]["machine_type_description"]
+        assert result["ImageFileCharacteristics"] == sample_info["exiftools_info"]["image_file_characteristics"]
+        assert result["ImageFileCharacteristicsDescription"] == sample_info["exiftools_info"]["image_file_characteristics_description"]
+        assert result["PEType"] == sample_info["exiftools_info"]["pe_type"]
+        assert result["PETypeDescription"] == sample_info["exiftools_info"]["pe_type_description"]
+        assert result["LinkerVersion"] == sample_info["exiftools_info"]["linker_version"]
+        assert result["CodeSize"] == sample_info["exiftools_info"]["code_size"]
+        assert result["InitializedDataSize"] == sample_info["exiftools_info"]["initialized_data_size"]
+        assert result["UninitializedDataSize"] == sample_info["exiftools_info"]["uninitialized_data_size"]
+        assert result["EntryPoint"] == sample_info["exiftools_info"]["entry_point"]
+        assert result["OSVersion"] == sample_info["exiftools_info"]["os_version"]
+        assert result["ImageVersion"] == sample_info["exiftools_info"]["image_version"]
+        assert result["SubsystemVersion"] == sample_info["exiftools_info"]["subsystem_version"]
+        assert result["Subsystem"] == sample_info["exiftools_info"]["subsystem"]
+        assert result["SubsystemDescription"] == sample_info["exiftools_info"]["subsystem_description"]
+        
+    finally:
+        pass

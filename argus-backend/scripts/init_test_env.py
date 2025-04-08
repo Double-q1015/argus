@@ -1,32 +1,64 @@
+import os
+import sys
+from pathlib import Path
 import asyncio
 import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 from minio import Minio
+from beanie import init_beanie
+# 添加项目根目录到Python路径
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from app.core.config import settings
 from app.models.sample import Sample
 from app.models.user import User
 from app.models.yara import YaraRule
-from app.models.scale import Scale
 from app.models.api_key import ApiKey
-from beanie import init_beanie
-from app.core.storage import StorageFactory, storage_adapter
+from app.core.storage import storage_adapter
+
+# 导入所有模型
+from app.models.analysis import (
+    Task,
+    TaskCondition,
+    TaskStatus,
+    SampleAnalysisStatus,
+    AnalysisConfig,
+    SampleAnalysis,
+    AnalysisResult,
+    AnalysisSchedule
+)
+from app.models.migration import MigrationTask, MigrationFileStatus
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def init_mongodb():
-    """初始化 MongoDB 数据库和集合"""
+async def init_test_environment():
+    """初始化测试环境"""
+    # 设置环境变量
+    os.environ["MONGODB_URL"] = "mongodb://localhost:27017"
+    os.environ["MONGODB_DB_NAME"] = "argus_test"
+    os.environ["TESTING"] = "true"
+    
+    # 创建数据库连接
+    client = AsyncIOMotorClient("mongodb://localhost:27017")
+    
     try:
-        # 连接 MongoDB
-        client = AsyncIOMotorClient(settings.MONGODB_URL)
-        db = client[settings.MONGODB_DB]
+        # 确保数据库存在
+        db = client["argus_test"]
         
-        # 清理现有索引
-        collections = ["samples", "users", "yara_rules", "scales", "api_keys"]
+        # 删除已存在的数据库（如果存在）
+        await client.drop_database("argus_test")
+        
+        # 创建所有集合
+        collections = [
+            "samples", "users", "yara_rules", "scales", "api_keys",
+            "tasks", "task_conditions", "task_status", "sample_analysis_status",
+            "analysis_configs", "sample_analyses", "analysis_results", "analysis_schedules",
+            "migration_tasks", "migration_file_status"
+        ]
+        
         for collection_name in collections:
-            collection = db[collection_name]
-            await collection.drop_indexes()
+            await db.create_collection(collection_name)
         
         # 初始化 Beanie
         await init_beanie(
@@ -35,17 +67,27 @@ async def init_mongodb():
                 Sample,
                 User,
                 YaraRule,
-                Scale,
-                ApiKey
-            ],
-            allow_index_dropping=True
+                ApiKey,
+                Task,
+                TaskCondition,
+                TaskStatus,
+                SampleAnalysisStatus,
+                AnalysisConfig,
+                SampleAnalysis,
+                AnalysisResult,
+                AnalysisSchedule,
+                MigrationTask,
+                MigrationFileStatus
+            ]
         )
         
-        logger.info("MongoDB 初始化成功")
-        return True
-    except Exception as e:
-        logger.error(f"MongoDB 初始化失败: {str(e)}")
-        raise
+        print("测试环境初始化完成！")
+        print(f"数据库: argus_test")
+        print(f"已创建集合: {', '.join(collections)}")
+        
+    finally:
+        # 关闭数据库连接
+        client.close()
 
 def init_minio():
     """初始化 MinIO 存储桶"""
@@ -97,8 +139,8 @@ async def init_storage():
 async def main():
     """初始化测试环境"""
     try:
-        # 初始化 MongoDB
-        await init_mongodb()
+        # 初始化测试环境
+        await init_test_environment()
         
         # 初始化 MinIO
         init_minio()

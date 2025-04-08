@@ -10,7 +10,6 @@ from beanie import init_beanie
 from app.models.sample import Sample
 from app.models.user import User
 from app.models.yara import YaraRule
-from app.models.scale import Scale
 from app.models.api_key import ApiKey
 from app.core.config import settings
 
@@ -26,7 +25,6 @@ async def main():
             Sample,
             User,
             YaraRule,
-            Scale,
             ApiKey
         ]
     )
