@@ -162,9 +162,8 @@ const fetchSample = async () => {
     await samplesStore.fetchSampleById(id)
     const sample = samplesStore.currentSample
     if (sample) {
-      form.name = sample.name
-      form.mime = sample.mime
-      form.submission_type = sample.submission_type
+      form.name = sample.file_name
+      form.mime = sample.file_type
       form.tags = sample.tags
     }
   } catch (error) {
@@ -186,14 +185,17 @@ const handleSubmit = async () => {
     submitting.value = true
     
     if (isEdit.value) {
-      await samplesStore.updateSample(route.params.id as string, form)
-      ElMessage.success('更新成功')
+      ElMessage.warning('更新功能暂不可用')
+      router.push('/samples')
     } else {
-      await samplesStore.createSample(form)
-      ElMessage.success('创建成功')
+      if (form.file) {
+        await samplesStore.createSample(form.file, form.tags)
+        ElMessage.success('创建成功')
+        router.push('/samples')
+      } else {
+        ElMessage.error('请上传文件')
+      }
     }
-    
-    router.push('/samples')
   } catch (error) {
     console.error('保存失败:', error)
     ElMessage.error('保存失败')

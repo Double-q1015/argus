@@ -224,8 +224,8 @@ const handleSearch = async () => {
   loading.value = true
   try {
     const response = await searchSamples(searchQuery.value)
-    searchResults.value = response.results
-    total.value = response.total
+    searchResults.value = response.data.results
+    total.value = response.data.total
   } catch (error: any) {
     ElMessage.error('搜索失败：' + (error.message || '未知错误'))
   } finally {

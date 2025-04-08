@@ -121,12 +121,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getRecentSamples, getDashboardStats, type DashboardStats } from '@/api/home'
-import type { SampleResponse } from '@/api/samples'
+import { getRecentSamples, getDashboardStats, type DashboardStats, type RecentSample } from '@/api/home'
 import { formatDate, formatBytes } from '@/utils/format'
 import { Document, Plus, FolderOpened, User } from '@element-plus/icons-vue'
 
-const recentSamples = ref<SampleResponse[]>([])
+const recentSamples = ref<RecentSample[]>([])
 const loading = ref(false)
 const stats = ref<DashboardStats>({
   total_samples: 0,
@@ -142,8 +141,8 @@ const fetchData = async () => {
       getRecentSamples(5),
       getDashboardStats()
     ])
-    recentSamples.value = samplesData
-    stats.value = statsData
+    recentSamples.value = samplesData.data
+    stats.value = statsData.data
   } catch (error) {
     console.error('获取数据失败:', error)
     ElMessage.error('获取数据失败')

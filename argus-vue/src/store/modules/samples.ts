@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { getSamples, getSampleById, createSample, updateSample, deleteSample } from '@/api/samples'
-import type { Sample } from '@/api/samples'
+import { getSamples, deleteSample, getSample, uploadSample } from '@/api/samples'
+import type { Sample } from '@/types/sample'
 
 export const useSamplesStore = defineStore('samples', {
   state: () => ({
@@ -22,9 +22,7 @@ export const useSamplesStore = defineStore('samples', {
       this.error = null
       try {
         const response = await getSamples(params)
-        if (response.status === 'success') {
-          this.samples = response.data.samples
-        }
+        this.samples = response.data.data || []
       } catch (error) {
         this.error = error instanceof Error ? error.message : '获取样本列表失败'
       } finally {
@@ -36,10 +34,8 @@ export const useSamplesStore = defineStore('samples', {
       this.loading = true
       this.error = null
       try {
-        const response = await getSampleById(id)
-        if (response.status === 'success') {
-          this.currentSample = response.data.sample
-        }
+        const response = await getSample(id)
+        this.currentSample = response.data
       } catch (error) {
         this.error = error instanceof Error ? error.message : '获取样本详情失败'
       } finally {
@@ -47,40 +43,15 @@ export const useSamplesStore = defineStore('samples', {
       }
     },
 
-    async createSample(sample: Partial<Sample>) {
+    async createSample(file: File, tags?: string[], description?: string) {
       this.loading = true
       this.error = null
       try {
-        const response = await createSample(sample)
-        if (response.status === 'success') {
-          this.samples.unshift(response.data.sample)
-          return response.data.sample
-        }
+        const response = await uploadSample({ file, tags, description })
+        this.samples.unshift(response.data)
+        return response.data
       } catch (error) {
         this.error = error instanceof Error ? error.message : '创建样本失败'
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async updateSample(id: string, sample: Partial<Sample>) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await updateSample(id, sample)
-        if (response.status === 'success') {
-          const index = this.samples.findIndex(s => s.sha256_digest === id)
-          if (index !== -1) {
-            this.samples[index] = response.data.sample
-          }
-          if (this.currentSample?.sha256_digest === id) {
-            this.currentSample = response.data.sample
-          }
-          return response.data.sample
-        }
-      } catch (error) {
-        this.error = error instanceof Error ? error.message : '更新样本失败'
         throw error
       } finally {
         this.loading = false
@@ -91,12 +62,10 @@ export const useSamplesStore = defineStore('samples', {
       this.loading = true
       this.error = null
       try {
-        const response = await deleteSample(id)
-        if (response.status === 'success') {
-          this.samples = this.samples.filter(s => s.sha256_digest !== id)
-          if (this.currentSample?.sha256_digest === id) {
-            this.currentSample = null
-          }
+        await deleteSample(id)
+        this.samples = this.samples.filter(s => s.sha256_digest !== id)
+        if (this.currentSample?.sha256_digest === id) {
+          this.currentSample = null
         }
       } catch (error) {
         this.error = error instanceof Error ? error.message : '删除样本失败'

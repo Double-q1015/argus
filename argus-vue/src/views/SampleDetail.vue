@@ -144,7 +144,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getSample } from '@/api/samples'
-import type { SampleDetail } from '@/api/samples'
+import type { SampleDetail } from '@/types/sample'
 
 const route = useRoute()
 const loading = ref(false)
@@ -160,7 +160,8 @@ const fetchSampleDetail = async () => {
 
   loading.value = true
   try {
-    sample.value = await getSample(sha256)
+    const response = await getSample(sha256)
+    sample.value = response.data
   } catch (error: any) {
     ElMessage.error('获取样本详情失败：' + (error.message || '未知错误'))
   } finally {
@@ -183,7 +184,7 @@ const formatFileSize = (size: number) => {
 }
 
 // 格式化日期
-const formatDate = (date: string | null) => {
+const formatDate = (date: string | undefined) => {
   if (!date) return '-'
   return new Date(date).toLocaleString()
 }
