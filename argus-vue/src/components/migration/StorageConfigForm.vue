@@ -34,7 +34,6 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import type { MinioStorageConfig, LocalStorageConfig } from '@/types/migration'
 
 const props = defineProps<{
   modelValue: Record<string, any>

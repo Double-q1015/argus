@@ -53,14 +53,13 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { tasksApi, type Task, type TaskStatus } from '@/api/tasks'
+import { tasksApi, type Task} from '@/api/tasks'
 import { formatDate } from '@/utils/date'
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 const task = ref<Task | null>(null)
-const taskStatus = ref<TaskStatus | null>(null)
 
 const loadTask = async () => {
   const taskId = route.params.id as string

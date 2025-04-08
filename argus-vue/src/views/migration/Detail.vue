@@ -83,7 +83,6 @@ import { ElMessage } from 'element-plus'
 import { getMigrationTask, getMigrationFileStatuses } from '@/api/migration'
 import { getStatusType, getStatusText, formatSize, getProgressPercentage, getProgressStatus } from '@/utils/migration'
 import type { MigrationTask, MigrationFileStatus } from '@/types/migration'
-import type { ApiListResponse } from '@/utils/request'
 
 const route = useRoute()
 const loading = ref(false)
@@ -97,23 +96,14 @@ const loadTask = async () => {
   loading.value = true
   console.log('开始加载迁移任务')
   try {
-    console.log('发送请求到 /api/v1/migration/tasks/' + route.params.id)
     const response = await getMigrationTask(route.params.id as string)
-    console.log('收到响应:', response)
-    console.log('响应类型:', typeof response)
-    console.log('响应是否为对象:', response instanceof Object)
-    console.log('响应是否为数组:', Array.isArray(response))
-    console.log('响应是否有 data 属性:', 'data' in response)
     if (response && typeof response === 'object' && !Array.isArray(response)) {
       // @ts-ignore
         task.value = response
-      console.log('迁移任务加载成功:', task.value)
     } else {
-      console.error('迁移任务数据为空或格式不正确')
       ElMessage.error('迁移任务数据为空或格式不正确')
     }
   } catch (error) {
-    console.error('加载迁移任务失败:', error)
     ElMessage.error('加载迁移任务失败')
   } finally {
     loading.value = false
@@ -122,7 +112,6 @@ const loadTask = async () => {
 
 const loadFileStatuses = async () => {
   loading.value = true
-  console.log('开始加载文件状态')
   try {
     const skip = (currentPage.value - 1) * pageSize.value
     const response = await getMigrationFileStatuses(route.params.id as string, {
@@ -133,9 +122,7 @@ const loadFileStatuses = async () => {
     fileStatuses.value = response.data
     // @ts-ignore
     total.value = response.total
-    console.log('文件状态加载成功:', fileStatuses.value)
   } catch (error) {
-    console.error('加载文件状态失败:', error)
     ElMessage.error('加载文件状态失败')
   } finally {
     loading.value = false
