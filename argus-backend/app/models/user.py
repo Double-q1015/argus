@@ -1,10 +1,7 @@
 from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
-from beanie import Document, Link, Indexed
+from typing import Optional
+from beanie import Document
 from pydantic import BaseModel, Field, EmailStr
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class User(Document):
     """
@@ -38,19 +35,6 @@ class User(Document):
                 "is_superuser": True
             }
         }
-
-    @classmethod
-    def verify_password(cls, plain_password: str, hashed_password: str) -> bool:
-        """
-        验证密码
-        """
-        return pwd_context.verify(plain_password, hashed_password)
-
-    def get_password_hash(self, password: str) -> str:
-        """
-        获取密码哈希值
-        """
-        return pwd_context.hash(password)
 
 class UserCreate(BaseModel):
     """

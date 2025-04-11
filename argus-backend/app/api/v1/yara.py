@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 from app.models.yara import YaraRule, YaraRuleCreate, YaraRuleUpdate, YaraRuleResponse
 from app.core.yara_manager import YaraManager
-from app.core.auth import get_current_user
+from app.core.security import get_current_user
 from app.models.user import User
 from datetime import datetime
 from bson import ObjectId

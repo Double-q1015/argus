@@ -48,7 +48,11 @@ class MagicResult(BaseModel):
     is_char: bool = False  # 是否为字符设备
     is_unknown: bool = False  # 是否为未知类型
 
-async def get_file_type(file_path: str) -> MagicResult:
+    def to_dict(self) -> dict:
+        """转换为字典格式"""
+        return {k: v for k, v in self.dict(by_alias=True).items() if v is not None}
+
+async def perform_magic_analysis(file_path: str) -> MagicResult:
     """
     使用magic库识别文件类型
     

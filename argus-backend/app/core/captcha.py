@@ -2,7 +2,6 @@ from io import BytesIO
 from captcha.image import ImageCaptcha
 import random
 import string
-from fastapi import HTTPException, status
 from fastapi.responses import StreamingResponse
 import logging
 import os

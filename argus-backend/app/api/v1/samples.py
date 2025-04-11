@@ -90,11 +90,11 @@ async def upload_sample_file(
                 detail="File is empty"
             )
         
-        if file_size > settings.MAX_UPLOAD_SIZE:
+        if file_size > settings.MAX_FILE_SIZE:
             logger.error(f"文件大小超过限制: {file.filename} ({file_size} bytes)")
             raise HTTPException(
                 status_code=400,
-                detail=f"File size exceeds limit ({settings.MAX_UPLOAD_SIZE} bytes)"
+                detail=f"File size exceeds limit ({settings.MAX_FILE_SIZE} bytes)"
             )
         
         # 计算SHA256
@@ -119,7 +119,7 @@ async def upload_sample_file(
             }
         
         # 生成文件路径
-        file_path = f"{sha256_digest}"
+        file_path = await storage.generate_file_path(sha256_digest)
         logger.info(f"生成文件路径: {file_path}")
         
         # 保存文件到存储
@@ -141,14 +141,13 @@ async def upload_sample_file(
         # 创建样本记录
         try:
             sample = Sample(
-                sha256_digest=sha256_digest,
                 file_name=file.filename,
-                file_size=file_size,
-                file_type=file.content_type,
                 file_path=file_path,
-                tags=tags,
+                file_size=file_size,
+                sha256_digest=sha256_digest,
+                uploader=current_user.id,
                 description=description,
-                uploader=current_user.id
+                tags=tags
             )
             
             await sample.save()

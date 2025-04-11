@@ -3,6 +3,10 @@ import os
 import tempfile
 from typing import Dict, Any, Optional, List
 from minio import Minio
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 from app.core.config import settings
 from app.models.exiftool import ExifToolMetadata
 
@@ -279,3 +283,9 @@ async def _analyze_file(file_path: str) -> Dict[str, Any]:
         return metadata_dict
     except Exception as e:
         raise ValueError(f"Error processing file: {e}")
+
+if __name__ == "__main__":
+    import asyncio
+    file_path = "tests/data/samples/malware/004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
+    result = asyncio.run(perform_exiftool_analysis(file_path=file_path))
+    print(result)

@@ -563,7 +563,7 @@ def get_pe_header_info(pe) -> dict:
     finally:
         return pe_header_info
 
-def analyze_pe_file(file_path: str) -> PEAnalysisResult:
+async def perform_pe_analysis(file_path: str) -> PEAnalysisResult:
     """
     分析PE文件
     
@@ -712,7 +712,8 @@ def analyze_pe_file(file_path: str) -> PEAnalysisResult:
                                     ))
         
         # 使用特征检测器进行检测
-        characteristics_manager = PECharacteristicsManager("argus-backend/app/core/pe_characteristics.yaml")
+        pe_characteristics_path = os.path.join(os.path.dirname(__file__), "pe_characteristics.yaml")
+        characteristics_manager = PECharacteristicsManager(pe_characteristics_path)
         suspicious_features = characteristics_manager.get_vulnerabilities(pe)
         
         # 检查是否有可疑特征
@@ -911,7 +912,7 @@ def analyze_minio_pe_file(
             )
         
         # 分析PE文件
-        result = analyze_pe_file(temp_file_path)
+        result = perform_pe_analysis(temp_file_path)
         
         # 如果下载的文件大小小于实际文件大小，添加警告
         if download_size < file_size:
@@ -958,6 +959,6 @@ def analyze_minio_pe_file(
 if __name__ == "__main__":
     # 测试calculate_pehashng
     import json
-    file_path = "argus-backend/tests/data/samples/malware/004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
-    pe_analysis_result = analyze_pe_file(file_path)
+    file_path = "tests/data/samples/malware/004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
+    pe_analysis_result = perform_pe_analysis(file_path)
     print(f"PE分析结果: {json.dumps(pe_analysis_result.to_dict(), indent=4)}")

@@ -9,11 +9,11 @@ from app.services.task_executor import TaskExecutor
 from app.services.analysis_service import AnalysisService
 from app.services.analysis_config_service import AnalysisConfigService
 from app.services.analysis_executor import AnalysisExecutor
-from app.models.sample import Sample
+from app.models.sample import Sample, SampleStatusEnum
 from app.models.migration import MigrationTask, MigrationFileStatus
 from app.services.migration_service import MigrationService
 from app.core.config import settings
-
+from app.core.sample_analyzer import on_sample_added
 # 配置日志
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -33,6 +33,7 @@ class TaskScheduler:
         self.is_running = True
         self.tasks.append(asyncio.create_task(self._schedule_loop()))
         self.tasks.append(asyncio.create_task(self._check_stale_tasks_loop()))
+        self.tasks.append(asyncio.create_task(self._check_pending_samples()))
         
     async def stop(self):
         """停止调度器"""
@@ -123,6 +124,18 @@ class TaskScheduler:
             except Exception as e:
                 logger.error(f"检查卡住的迁移任务时出错: {str(e)}", exc_info=True)
                 await asyncio.sleep(300)  # 发生错误时等待5分钟再继续
+    
+    # 检查samples是pending的，添加为分析任务
+    async def _check_pending_samples(self):
+        while self.is_running:
+            try:
+                pending_samples = await Sample.find({"analysis_status": SampleStatusEnum.pending}).to_list()
+                for sample in pending_samples:
+                    logger.info(f"Checking sample {sample.sha256_digest}")
+                    await on_sample_added(sample.sha256_digest)
+            except Exception as e:
+                logger.error(f"检查pending样本时出错: {str(e)}", exc_info=True)
+            await asyncio.sleep(300)
                 
     @staticmethod
     def parse_cron(cron_expression: str) -> datetime:

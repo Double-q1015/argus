@@ -40,6 +40,10 @@ class HashResult(BaseModel):
     tlsh: Optional[str] = None
     error_message: Optional[str] = None
 
+    def to_dict(self) -> dict:
+        """转换为字典格式"""
+        return {k: v for k, v in self.dict(by_alias=True).items() if v is not None}
+
 def calculate_crc32(data: bytes) -> str:
     """
     计算数据的CRC32哈希值
@@ -144,7 +148,7 @@ def calculate_hashes(data: bytes) -> Dict[str, str]:
             "error": str(e)
         }
 
-def calculate_file_hashes(file_path: str, max_size: int = 1024 * 1024 * 100) -> HashResult:
+async def perform_hash_analysis(file_path: str, max_size: int = 1024 * 1024 * 100) -> HashResult:
     """
     计算文件的多种哈希值
     
@@ -691,8 +695,8 @@ def verify_minio_file_hash(
 
 if __name__ == "__main__":
     # 测试calculate_pehashng
-    file_path = "argus-backend/tests/data/samples/malware/004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
-    hash_result = calculate_file_hashes(file_path)
+    file_path = "tests/data/samples/malware/004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
+    hash_result = perform_hash_analysis(file_path)
     print(f"peHashNG: {hash_result}")
     
     

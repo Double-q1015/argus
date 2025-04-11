@@ -4,12 +4,11 @@ from datetime import datetime
 from beanie import PydanticObjectId, Link
 
 from app.models.user import User
-from app.core.auth import get_current_user
+from app.core.security import get_current_user
 from app.models.analysis import Task
 from app.models.sample import Sample
 from app.services.task_service import TaskService
-from app.models.task import TaskStatus, TaskCreate, TaskResponse
-
+from app.models.tasks import TaskCreate, TaskResponse, TaskStatus
 router = APIRouter()
 
 @router.get("/", response_model=List[TaskResponse])
@@ -45,7 +44,7 @@ async def create_task(
         task_type=task_data.type,
         description=task_data.description,
         priority=task_data.priority,
-        created_by=current_user.username,  # 使用当前用户的用户名
+        created_by=current_user,  # 使用当前用户的用户名
         schedule=task_data.schedule,
         conditions=task_data.conditions,
         config_id=task_data.config_id

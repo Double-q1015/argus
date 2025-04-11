@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import Optional
 
 from app.api import deps

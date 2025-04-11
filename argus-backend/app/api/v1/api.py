@@ -1,6 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, samples, yara, analysis, tasks, users, migration
-from app.api.v1.endpoints import home, search
+from app.api.v1 import auth, samples, yara, analysis, tasks, users, migration, home, search
 
 api_router = APIRouter()
 

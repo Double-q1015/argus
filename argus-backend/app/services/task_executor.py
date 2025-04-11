@@ -8,7 +8,7 @@ from app.models.sample import Sample
 from app.services.task_service import TaskService
 from app.services.analysis_service import AnalysisService
 from app.core.exiftool_analyzer import perform_exiftool_analysis
-from app.core.pe_analyzer import analyze_pe_file
+from app.core.pe_analyzer import perform_pe_analysis
 from app.core.strings_analyzer import analyze_strings
 from app.core.hash_analyzer import calculate_minio_file_hashes
 from app.core.storage import create_minio_client
@@ -161,7 +161,7 @@ class TaskExecutor:
                     if task.type == "exiftool":
                         result = await perform_exiftool_analysis(str(sample.file_path))
                     elif task.type == "pe_info":
-                        result = await analyze_pe_file(str(sample.file_path))
+                        result = await perform_pe_analysis(str(sample.file_path))
                     elif task.type == "strings":
                         result = await analyze_strings(str(sample.file_path))
                     elif task.type == "hash":
@@ -346,7 +346,7 @@ class TaskExecutor:
                     if task.type == "exiftool":
                         result = await perform_exiftool_analysis(str(sample.file_path))
                     elif task.type == "pe_info":
-                        result = await analyze_pe_file(str(sample.file_path))
+                        result = await perform_pe_analysis(str(sample.file_path))
                     elif task.type == "strings":
                         result = await analyze_strings(str(sample.file_path))
                     elif task.type == "hash":
@@ -379,7 +379,7 @@ class TaskExecutor:
                     
                     # 更新样本分析状态
                     status.status = "completed"
-                    status.analysis_time = datetime.utcnow()
+                    status.analysis_time = datetime.now(timezone.utc)
                     await status.save()
                     
                     processed_samples += 1

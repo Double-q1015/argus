@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from minio import Minio
-from minio.error import S3Error
 from app.core.config import settings
 from fastapi import UploadFile
 from datetime import datetime, timedelta, timezone
@@ -8,14 +7,11 @@ from typing import Optional, Union, Dict, Any, List
 import logging
 import io
 import os
-import zipfile
-import tempfile
 import boto3
 from botocore.exceptions import ClientError
-import shutil
 from pathlib import Path
-import itertools
-
+from app.core.config import settings
+from app.models.migration import MigrationFileStatus, MigrationStatus, MigrationTask
 logger = logging.getLogger(__name__)
 
 class StorageAdapter(ABC):
@@ -67,6 +63,11 @@ class StorageAdapter(ABC):
             - is_dir: 是否为目录
         """
         pass
+    
+    @abstractmethod
+    async def list_files_and_update_status(self, task_id: str, prefix: str = "", recursive: bool = True) -> bool:
+        """列出文件并且更新文件状态为 pending"""
+        pass
 
     @abstractmethod
     async def list_files_with_pagination(
@@ -109,6 +110,7 @@ class LocalStorageAdapter(StorageAdapter):
         :param file_path: 原始文件路径（通常是SHA256值）
         :return: 实际的文件路径
         """
+        file_path = file_path.split("/")[-1]
         if self.directory_depth <= 0:
             return os.path.join(self.base_path, file_path)
             
@@ -222,6 +224,57 @@ class LocalStorageAdapter(StorageAdapter):
         except Exception as e:
             logger.error(f"列出文件失败: {str(e)}")
             return []
+    # 列出文件并且更新文件状态为 pending
+    async def list_files_and_update_status(self, task_id: str, prefix: str = "", recursive: bool = True) -> bool:
+        """列出文件并且更新文件状态为 pending"""
+        try:
+            for root, _, filenames in os.walk(self.base_path):
+                for filename in filenames:
+                    file_path = os.path.join(root, filename)
+                    rel_path = os.path.relpath(file_path, self.base_path)
+                    source_file_info = {
+                        "path": rel_path,
+                        "size": os.path.getsize(file_path),
+                        "last_modified": datetime.fromtimestamp(
+                            os.path.getmtime(file_path),
+                            timezone.utc
+                        )
+                    }
+                    # 创建或更新任务本身的 total_files 和 total_size
+                    migration_task = await MigrationTask.get(task_id)
+                    if not migration_task:
+                        raise ValueError(f"任务 {task_id} 不存在")
+                    migration_task.total_files += 1
+                    migration_task.total_size += source_file_info["size"]
+                    # 更新列出文件的状态为 running
+                    migration_task.list_files_status = MigrationStatus.RUNNING
+                    await migration_task.save()
+                    # 创建或获取文件状态记录
+                    file_status = await MigrationFileStatus.find_one(
+                        MigrationFileStatus.task_id == task_id,
+                        MigrationFileStatus.file_path == file_path
+                    )
+                    if not file_status:
+                        file_status = MigrationFileStatus(
+                            task_id=task_id,
+                            file_path=source_file_info["path"],
+                            status=MigrationStatus.PENDING,
+                            source_size=source_file_info["size"]
+                        )
+                        await file_status.save()
+
+            # 更新列出文件的状态为 completed
+            migration_task = await MigrationTask.get(task_id)
+            migration_task.list_files_status = MigrationStatus.COMPLETED
+            await migration_task.save()
+        except Exception as e:
+            logger.error(f"列出文件并且更新文件状态为 pending失败: {str(e)}")
+            # 更新列出文件的状态为 failed
+            migration_task = await MigrationTask.get(task_id)
+            migration_task.list_files_status = MigrationStatus.FAILED
+            await migration_task.save()
+            return False
+        return True
             
     async def list_files_with_pagination(
         self,
@@ -465,6 +518,9 @@ class MinioStorageAdapter(StorageAdapter):
         except Exception as e:
             logger.error(f"列出文件失败: {str(e)}")
             raise
+    async def list_files_and_update_status(self, task_id: str, prefix: str = "", recursive: bool = True) -> bool:
+        """列出文件并且更新文件状态为 pending"""
+        pass
 
 class S3StorageAdapter(StorageAdapter):
     """AWS S3存储适配器"""
@@ -617,6 +673,10 @@ class S3StorageAdapter(StorageAdapter):
         except Exception as e:
             logger.error(f"Error listing files: {e}")
             return []
+        
+    async def list_files_and_update_status(self, task_id: str, prefix: str = "", recursive: bool = True) -> bool:
+        """列出文件并且更新文件状态为 pending"""
+        pass
 
 class StorageFactory:
     """存储适配器工厂"""
@@ -640,28 +700,45 @@ storage_adapter = StorageFactory.create_adapter(settings.STORAGE_TYPE, settings.
 class Storage:
     def __init__(self):
         self.adapter = storage_adapter
+        self.sample_storage_prefix = settings.SAMPLE_STORAGE_PREFIX
+        self.sample_storage_pattern = settings.SAMPLE_STORAGE_PATTERN
     
     async def save_file(self, file_path: str, file: Union[UploadFile, bytes]) -> bool:
+        """保存文件"""
         return await self.adapter.save_file(file_path, file)
     
     async def delete_file(self, file_path: str) -> bool:
+        """删除文件"""
         return await self.adapter.delete_file(file_path)
     
     async def get_file(self, file_path: str) -> Optional[bytes]:
+        """获取文件"""
         return await self.adapter.get_file(file_path)
     
     async def get_presigned_url(self, file_path: str) -> Optional[str]:
+        """获取预签名URL"""
         return await self.adapter.get_presigned_url(file_path)
     
     async def file_exists(self, file_path: str) -> bool:
         return await self.adapter.file_exists(file_path)
     
     async def get_file_stat(self, file_path: str) -> Optional[Dict[str, Any]]:
+        """获取文件状态信息"""
         return await self.adapter.get_file_stat(file_path)
         
     async def list_files(self, prefix: str = "", recursive: bool = True) -> List[Dict[str, Any]]:
+        """列出文件"""
         return await self.adapter.list_files(prefix, recursive)
-
+    
+    # 生成文件保存路径 建议使用sha256_digest的前四个字节作为四级目录
+    async def generate_file_path(self, sha256_digest: str) -> str:
+        """生成文件保存路径"""
+        if settings.SAMPLE_STORAGE_PATTERN == "sha256_digest":
+            return f"{self.sample_storage_prefix}/{sha256_digest}"
+        elif settings.SAMPLE_STORAGE_PATTERN == "sha256_digest[0]/sha256_digest[1]/sha256_digest[2]/sha256_digest[3]/sha256_digest":
+            return f"{self.sample_storage_prefix}/{sha256_digest[0]}/{sha256_digest[1]}/{sha256_digest[2]}/{sha256_digest[3]}/{sha256_digest}"
+        else:
+            raise ValueError(f"Unsupported sample storage pattern: {settings.SAMPLE_STORAGE_PATTERN}")
 # 创建存储实例
 storage = Storage()
 

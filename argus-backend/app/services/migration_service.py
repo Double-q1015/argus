@@ -143,83 +143,23 @@ class MigrationService:
             # 创建源存储和目标存储适配器
             source_adapter = StorageFactory.create_adapter(task.source_storage, task.source_config)
             target_adapter = StorageFactory.create_adapter(task.target_storage, task.target_config)
-            
-            try:
-                # 直接使用MinIO的list_objects方法
-                if not isinstance(source_adapter, MinioStorageAdapter):
-                    raise Exception("源存储必须是MinIO")
-                    
-                # 使用分页方式处理文件
-                start_after = task.last_processed_file
-                if start_after:
-                    logger.info(f"从断点处继续执行: {start_after}")
-                    task.resume_count += 1
-                    task.last_resume_at = datetime.now(timezone.utc)
-                    await task.save()
-                
-                while True:
-                    # 检查任务是否被中断
-                    task = await MigrationTask.get(task_id)
-                    if task.is_interrupted:
-                        logger.info(f"任务 {task_id} 被中断，停止执行")
-                        task.status = MigrationStatus.FAILED
-                        task.error_message = "任务被中断"
-                        task.completed_at = datetime.now(timezone.utc)
+            # 如果是从minio迁移到本地
+            if task.source_storage == "minio" and task.target_storage == "local":
+                try:
+                    # 直接使用MinIO的list_objects方法
+                    if not isinstance(source_adapter, MinioStorageAdapter):
+                        raise Exception("源存储必须是MinIO")
+                        
+                    # 使用分页方式处理文件
+                    start_after = task.last_processed_file
+                    if start_after:
+                        logger.info(f"从断点处继续执行: {start_after}")
+                        task.resume_count += 1
+                        task.last_resume_at = datetime.now(timezone.utc)
                         await task.save()
-                        return False
                     
-                    # 更新心跳时间
-                    task.last_heartbeat = datetime.now(timezone.utc)
-                    await task.save()
-                    
-                    # 获取一批文件
-                    objects = source_adapter.client.list_objects(
-                        source_adapter.bucket_name,
-                        start_after=start_after,
-                        recursive=True
-                    )
-                    
-                    # 处理这批文件
-                    files = []
-                    count = 0
-                    last_object = None
-                    
-                    for obj in objects:
-                        last_object = obj
-                        files.append({
-                            "path": obj.object_name,
-                            "size": obj.size,
-                            "last_modified": obj.last_modified
-                        })
-                        count += 1
-                        
-                        # 如果已经收集了足够的文件，就停止迭代
-                        if count >= 1000:
-                            break
-                    
-                    if not files:
-                        break
-                        
-                    # 记录下一页的起始位置
-                    if last_object:
-                        start_after = last_object.object_name
-                        # 更新任务的断点位置
-                        task.last_processed_file = start_after
-                        await task.save()
-                        
-                    # 应用文件模式过滤
-                    if task.file_patterns:
-                        files = [f for f in files if any(fnmatch.fnmatch(f["path"], p) for p in task.file_patterns)]
-                    
-                    # 更新任务统计信息
-                    batch_size = sum(f["size"] for f in files)
-                    task.processed_files += len(files)
-                    task.processed_size += batch_size
-                    await task.save()
-                    
-                    # 处理这批文件
-                    for file in files:
-                        # 再次检查任务是否被中断
+                    while True:
+                        # 检查任务是否被中断
                         task = await MigrationTask.get(task_id)
                         if task.is_interrupted:
                             logger.info(f"任务 {task_id} 被中断，停止执行")
@@ -229,95 +169,266 @@ class MigrationService:
                             await task.save()
                             return False
                         
-                        file_path = file["path"]
-                        file_size = file["size"]
+                        # 更新心跳时间
+                        task.last_heartbeat = datetime.now(timezone.utc)
+                        await task.save()
                         
-                        # 创建或获取文件状态记录
-                        file_status = await MigrationFileStatus.find_one(
-                            MigrationFileStatus.task_id == task_id,
-                            MigrationFileStatus.file_path == file_path
+                        # 获取一批文件
+                        objects = source_adapter.client.list_objects(
+                            source_adapter.bucket_name,
+                            start_after=start_after,
+                            recursive=True
                         )
-                        if not file_status:
-                            file_status = MigrationFileStatus(
-                                task_id=task_id,
-                                file_path=file_path,
-                                status=MigrationStatus.PENDING,
-                                source_size=file_size
-                            )
-                            await file_status.save()
                         
-                        # 如果文件已经处理完成，跳过
-                        if file_status.status == MigrationStatus.COMPLETED:
-                            continue
+                        # 处理这批文件
+                        files = []
+                        count = 0
+                        last_object = None
                         
-                        try:
-                            # 检查目标文件是否已存在
-                            if await target_adapter.file_exists(file_path):
-                                target_stat = await target_adapter.get_file_stat(file_path)
-                                if target_stat and target_stat["size"] == file_size:
-                                    logger.info(f"文件已存在且大小相同，跳过: {file_path}")
-                                    file_status.status = MigrationStatus.COMPLETED
-                                    file_status.target_size = file_size
-                                    file_status.completed_at = datetime.now(timezone.utc)
-                                    await file_status.save()
-                                    continue
+                        for obj in objects:
+                            last_object = obj
+                            files.append({
+                                "path": obj.object_name,
+                                "size": obj.size,
+                                "last_modified": obj.last_modified
+                            })
+                            count += 1
                             
-                            # 开始迁移文件
-                            logger.info(f"开始迁移文件: {file_path}")
-                            file_status.status = MigrationStatus.RUNNING
-                            file_status.started_at = datetime.now(timezone.utc)
-                            await file_status.save()
+                            # 如果已经收集了足够的文件，就停止迭代
+                            if count >= 1000:
+                                break
+                        
+                        if not files:
+                            break
                             
-                            # 获取源文件内容
-                            file_content = await source_adapter.get_file(file_path)
-                            if not file_content:
-                                raise Exception("无法获取源文件内容")
-                            
-                            # 保存到目标存储
-                            if not await target_adapter.save_file(file_path, file_content):
-                                raise Exception("保存文件到目标存储失败")
-                            
-                            # 验证文件大小
-                            target_stat = await target_adapter.get_file_stat(file_path)
-                            if not target_stat or target_stat["size"] != file_size:
-                                raise Exception(f"目标文件大小不匹配: 期望 {file_size}, 实际 {target_stat['size'] if target_stat else 'unknown'}")
-                            
-                            # 更新文件状态
-                            file_status.status = MigrationStatus.COMPLETED
-                            file_status.target_size = file_size
-                            file_status.completed_at = datetime.now(timezone.utc)
-                            await file_status.save()
-                            
-                        except Exception as e:
-                            logger.error(f"迁移文件失败: {file_path}, 错误: {str(e)}")
-                            file_status.status = MigrationStatus.FAILED
-                            file_status.error_message = str(e)
-                            file_status.completed_at = datetime.now(timezone.utc)
-                            await file_status.save()
-                            task.failed_files += 1
+                        # 记录下一页的起始位置
+                        if last_object:
+                            start_after = last_object.object_name
+                            # 更新任务的断点位置
+                            task.last_processed_file = start_after
                             await task.save()
+                            
+                        # 应用文件模式过滤
+                        if task.file_patterns:
+                            files = [f for f in files if any(fnmatch.fnmatch(f["path"], p) for p in task.file_patterns)]
+                        
+                        # 更新任务统计信息
+                        batch_size = sum(f["size"] for f in files)
+                        task.processed_files += len(files)
+                        task.processed_size += batch_size
+                        await task.save()
+                        
+                        # 处理这批文件
+                        for file in files:
+                            # 再次检查任务是否被中断
+                            task = await MigrationTask.get(task_id)
+                            if task.is_interrupted:
+                                logger.info(f"任务 {task_id} 被中断，停止执行")
+                                task.status = MigrationStatus.FAILED
+                                task.error_message = "任务被中断"
+                                task.completed_at = datetime.now(timezone.utc)
+                                await task.save()
+                                return False
+                            
+                            file_path = file["path"]
+                            file_size = file["size"]
+                            
+                            # 创建或获取文件状态记录
+                            file_status = await MigrationFileStatus.find_one(
+                                MigrationFileStatus.task_id == task_id,
+                                MigrationFileStatus.file_path == file_path
+                            )
+                            if not file_status:
+                                file_status = MigrationFileStatus(
+                                    task_id=task_id,
+                                    file_path=file_path,
+                                    status=MigrationStatus.PENDING,
+                                    source_size=file_size
+                                )
+                                await file_status.save()
+                            
+                            # 如果文件已经处理完成，跳过
+                            if file_status.status == MigrationStatus.COMPLETED:
+                                continue
+                            
+                            try:
+                                # 检查目标文件是否已存在
+                                if await target_adapter.file_exists(file_path):
+                                    target_stat = await target_adapter.get_file_stat(file_path)
+                                    if target_stat and target_stat["size"] == file_size:
+                                        logger.info(f"文件已存在且大小相同，跳过: {file_path}")
+                                        file_status.status = MigrationStatus.COMPLETED
+                                        file_status.target_size = file_size
+                                        file_status.completed_at = datetime.now(timezone.utc)
+                                        await file_status.save()
+                                        continue
+                                
+                                # 开始迁移文件
+                                logger.info(f"开始迁移文件: {file_path}")
+                                file_status.status = MigrationStatus.RUNNING
+                                file_status.started_at = datetime.now(timezone.utc)
+                                await file_status.save()
+                                
+                                # 获取源文件内容
+                                file_content = await source_adapter.get_file(file_path)
+                                if not file_content:
+                                    raise Exception("无法获取源文件内容")
+                                
+                                # 保存到目标存储
+                                if not await target_adapter.save_file(file_path, file_content):
+                                    raise Exception("保存文件到目标存储失败")
+                                
+                                # 验证文件大小
+                                target_stat = await target_adapter.get_file_stat(file_path)
+                                if not target_stat or target_stat["size"] != file_size:
+                                    raise Exception(f"目标文件大小不匹配: 期望 {file_size}, 实际 {target_stat['size'] if target_stat else 'unknown'}")
+                                
+                                # 更新文件状态
+                                file_status.status = MigrationStatus.COMPLETED
+                                file_status.target_size = file_size
+                                file_status.completed_at = datetime.now(timezone.utc)
+                                await file_status.save()
+                                
+                            except Exception as e:
+                                logger.error(f"迁移文件失败: {file_path}, 错误: {str(e)}")
+                                file_status.status = MigrationStatus.FAILED
+                                file_status.error_message = str(e)
+                                file_status.completed_at = datetime.now(timezone.utc)
+                                await file_status.save()
+                                task.failed_files += 1
+                                await task.save()
+                        
+                        # 如果没有处理完1000个文件，说明已经到达最后一页
+                        if count < 1000:
+                            break
                     
-                    # 如果没有处理完1000个文件，说明已经到达最后一页
-                    if count < 1000:
-                        break
-                
-                # 更新任务状态为完成
-                task.status = MigrationStatus.COMPLETED
-                task.completed_at = datetime.now(timezone.utc)
-                task.last_processed_file = None  # 清除断点
-                task.is_interrupted = False  # 清除中断标记
-                await task.save()
-                
-                return True
-                
-            except Exception as e:
-                logger.error(f"迁移任务执行失败: {str(e)}")
-                task.status = MigrationStatus.FAILED
-                task.error_message = str(e)
-                task.completed_at = datetime.now(timezone.utc)
-                task.is_interrupted = False  # 清除中断标记
-                await task.save()
-                return False
+                    # 更新任务状态为完成
+                    task.status = MigrationStatus.COMPLETED
+                    task.completed_at = datetime.now(timezone.utc)
+                    task.last_processed_file = None  # 清除断点
+                    task.is_interrupted = False  # 清除中断标记
+                    await task.save()
+                    
+                    return True
+                    
+                except Exception as e:
+                    logger.error(f"迁移任务执行失败: {str(e)}")
+                    task.status = MigrationStatus.FAILED
+                    task.error_message = str(e)
+                    task.completed_at = datetime.now(timezone.utc)
+                    task.is_interrupted = False  # 清除中断标记
+                    await task.save()
+                    return False
+            # elif task.source_storage == "local" and task.target_storage == "minio":
+            #     if not isinstance(target_adapter, MinioStorageAdapter):
+            #         raise Exception("目标存储必须是MinIO")
+            #     # 列出文件并且更新文件状态为 pending
+            #     await source_adapter.list_files_and_update_status(task_id)
+            #     while True:
+            #         # 如果被打断，则停止任务
+            #         if task.is_interrupted:
+            #             logger.info(f"任务 {task_id} 被打断，停止任务")
+            #             task.status = MigrationStatus.FAILED
+            #             task.error_message = "任务被打断"
+            #             task.completed_at = datetime.now(timezone.utc)
+            #             await task.save()
+            #             return False
+            #         # 更新心跳时间
+            #         task.last_heartbeat = datetime.now(timezone.utc)
+            #         await task.save()
+
+            #         # 更新列出文件的状态为 running
+            #         task.list_files_status = MigrationStatus.RUNNING
+            #         await task.save()
+                    
+            #         # 获取一批文件 查看file_statuses 为pending的文件
+            #         file_statuses = await MigrationFileStatus.find(MigrationFileStatus.task_id == task_id, MigrationFileStatus.status == MigrationStatus.PENDING).to_list()
+            #         # 如果file_statuses 为空，则说明没有文件需要迁移，任务完成，但是还可能是迁移速度比列出文件速度快，后续还有文件被列出
+            #         if len(file_statuses) == 0:
+            #             if task.list_files_status == MigrationStatus.COMPLETED:
+            #                 task.status = MigrationStatus.COMPLETED
+            #                 task.completed_at = datetime.now(timezone.utc)
+            #                 await task.save()
+            #                 return True
+            #             elif task.list_files_status == MigrationStatus.RUNNING:
+            #                 # 说明列出文件比较慢，应该等待一会
+            #                 await asyncio.sleep(1)
+            #                 continue
+            #             else:
+            #                 task.status = MigrationStatus.FAILED
+            #                 task.error_message = "列出文件失败"
+            #                 task.completed_at = datetime.now(timezone.utc)
+            #                 await task.save()
+            #                 return False
+                    
+            #         elif len(file_statuses) > 0:
+            #             # 开始迁移文件
+            #             for file_status in file_statuses:
+            #                 logger.info(f"开始迁移文件: {file_status.file_path}")
+                            
+            #                 # 获取源文件内容
+            #                 file_content = await source_adapter.get_file(file_status.file_path)
+            #                 if not file_content:
+            #                     logger.error(f"无法获取源文件内容: {file_status.file_path}")
+            #                     file_status.status = MigrationStatus.FAILED
+            #                     file_status.error_message = "无法获取源文件内容"
+            #                     file_status.completed_at = datetime.now(timezone.utc)
+            #                     await file_status.save()
+            #                     continue
+            #                 # 保存到目标存储
+            #                 # 根据原始文件路径来计算对象存储中的文件路径
+
+            #                 if not await target_adapter.save_file(file_status.file_path, file_content):
+            #                     logger.error(f"保存文件到目标存储失败: {file_status.file_path}")
+            #                     file_status.status = MigrationStatus.FAILED
+            #                     file_status.error_message = "保存文件到目标存储失败"
+            #                     file_status.completed_at = datetime.now(timezone.utc)
+            #                     await file_status.save()
+            #                     continue
+                            
+            #                 # 验证文件大小
+            #                 target_stat = await target_adapter.get_file_stat(file_status.file_path)
+            #                 if not target_stat or target_stat["size"] != file_status.source_size:
+            #                     logger.error(f"目标文件大小不匹配: 期望 {file_status.source_size}, 实际 {target_stat['size'] if target_stat else 'unknown'}")
+            #                     file_status.status = MigrationStatus.FAILED
+            #                     file_status.error_message = f"目标文件大小不匹配: 期望 {file_status.source_size}, 实际 {target_stat['size'] if target_stat else 'unknown'}"
+            #                     file_status.completed_at = datetime.now(timezone.utc)
+            #                     await file_status.save()
+            #                     continue
+                            
+            #                 # 更新文件状态
+            #                 file_status.status = MigrationStatus.COMPLETED
+            #                 file_status.target_size = target_stat["size"]
+            #                 file_status.completed_at = datetime.now(timezone.utc)
+            #                 await file_status.save()
+                            
+            #                 # 更新任务统计信息
+            #                 task.processed_files += 1
+            #                 task.processed_size += target_stat["size"]
+            #                 await task.save()
+                            
+            #                 # 更新任务的断点位置
+            #                 task.last_processed_file = file_status.file_path
+            #                 await task.save()
+                            
+            #             # 如果已经处理完所有文件，则更新任务状态为完成
+            #             if task.processed_files == task.total_files:
+            #                 task.status = MigrationStatus.COMPLETED
+            #                 task.completed_at = datetime.now(timezone.utc)
+            #                 await task.save()
+            #                 return True
+                            
+                            
+                            
+                            
+                            
+                            
+
+
+                    
+                    
+            else:
+                raise Exception("不支持的迁移类型")
                 
         except Exception as e:
             logger.error(f"迁移任务执行失败: {str(e)}")

@@ -1,27 +1,56 @@
+import os
+import logging
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from beanie import PydanticObjectId
-import croniter
 from app.models.analysis import Task, TaskCondition, TaskStatus
 from app.models.user import User
+
+# 确保日志目录存在
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+log_dir = os.path.join(BASE_DIR, "logs")
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
+# 配置日志
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# 创建文件处理器
+file_handler = logging.FileHandler(os.path.join(log_dir, 'task_service.log'))
+file_handler.setLevel(logging.DEBUG)
+
+# 创建控制台处理器
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+
+# 创建格式化器
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+# 添加处理器到日志记录器
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 class TaskService:
     @staticmethod
     async def create_task(
         name: str,
         task_type: str,
-        created_by: str,
+        created_by: User,
         description: Optional[str] = None,
         priority: int = 0,
         schedule: Optional[str] = None,
         conditions: Optional[List[Dict[str, Any]]] = None,
         config_id: Optional[PydanticObjectId] = None
     ) -> Task:
+        # 检查created_by是否是User对象
+        if not isinstance(created_by, User):
+            raise ValueError("created_by must be a User object")
+        logger.info(f"创建新任务: {name}")
         """创建新任务"""
-        # 获取用户对象
-        user = await User.find_one({"username": created_by})
-        if not user:
-            return None
+
 
         # 创建任务
         task = Task(
@@ -30,7 +59,7 @@ class TaskService:
             description=description,
             status="created",
             priority=priority,
-            created_by=user,
+            created_by=created_by,
             schedule=schedule,
             config_id=config_id,
             is_active=True
@@ -52,7 +81,7 @@ class TaskService:
             updated_at=datetime.now(timezone.utc)
         )
         await task_status.insert()
-
+        logger.info(f"任务状态创建成功: {task_status}")
         # 创建任务条件
         if conditions:
             for i, condition in enumerate(conditions):

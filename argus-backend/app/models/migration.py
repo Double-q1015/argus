@@ -39,6 +39,8 @@ class MigrationTask(Document):
     last_resume_at: Optional[datetime] = Field(None, description="上次恢复执行的时间")
     is_interrupted: bool = Field(default=False, description="任务是否被中断")
     last_heartbeat: Optional[datetime] = Field(None, description="最后一次心跳时间")
+    # 是否完成列出文件
+    list_files_status: MigrationStatus = Field(default=MigrationStatus.PENDING, description="列出文件状态")
 
     class Settings:
         name = "migration_tasks"

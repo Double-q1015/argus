@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from datetime import datetime
 
 from app.models.user import User
-from app.core.auth import get_current_user
+from app.core.security import get_current_user
 from app.models.analysis_result import AnalysisResult
 from app.services.analysis_result_service import AnalysisResultService
 

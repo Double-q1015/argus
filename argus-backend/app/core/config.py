@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Argus"
     VERSION: str = "1.0.0"
     DESCRIPTION: str = "Argus API"
+    # 系统用户
+    SYSTEM_USER: str = "system_admin"
+    # 系统用户密码
+    SYSTEM_USER_PASSWORD: str = "system_admin_password"
     
     # CORS配置
     BACKEND_CORS_ORIGINS: List[str] = []
@@ -35,7 +39,7 @@ class Settings(BaseSettings):
     MONGODB_URL: str = "mongodb://192.168.2.9:27017"
     MONGODB_DB: str = "argus"
 
-    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
+    MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 10MB
     ALLOWED_EXTENSIONS: List[str] = ["jpg", "jpeg", "png", "gif"]
 
     # MinIO配置
@@ -68,6 +72,12 @@ class Settings(BaseSettings):
     
     # 存储配置
     STORAGE_TYPE: str = "minio"  # 可选值: "minio", "s3", "local"
+
+    # 配置样本文件在存储系统中的保存路径，建议使用sha256_digest的前四个字节作为四级目录
+    # 也可以配置sha256_digest作为路径，例如：
+    # SAMPLE_STORAGE_PATTERN: str = "sha256_digest"
+    SAMPLE_STORAGE_PREFIX: str = "samples"
+    SAMPLE_STORAGE_PATTERN: str = "sha256_digest[0]/sha256_digest[1]/sha256_digest[2]/sha256_digest[3]/sha256_digest"
     
     @property
     def storage_config(self) -> Dict[str, Any]:

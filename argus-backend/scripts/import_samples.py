@@ -4,7 +4,6 @@ import aiohttp
 from tqdm import tqdm
 import logging
 from typing import Optional
-from app.core.config import settings
 
 # 配置日志
 logging.basicConfig(
@@ -88,6 +87,7 @@ async def import_samples(sample_dir: str):
         # 创建会话并获取访问令牌
         async with aiohttp.ClientSession() as session:
             access_token = await get_access_token(session)
+            print(f"access_token: {access_token}")
             if not access_token:
                 logger.error("获取访问令牌失败")
                 return
@@ -97,7 +97,6 @@ async def import_samples(sample_dir: str):
             for root, _, filenames in os.walk(sample_dir):
                 for filename in filenames:
                     files.append(os.path.join(root, filename))
-            
             total_files = len(files)
             success_count = 0
             

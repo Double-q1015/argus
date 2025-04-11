@@ -23,7 +23,7 @@ from tests.fixtures.sample_fixtures import MALWARE_SAMPLES
 @pytest.fixture
 def test_pe():
     """创建模拟的PE对象"""
-    # 模拟pefile.PE对象
+        # 模拟pefile.PE对象
     mock_pe = MagicMock()
     mock_pe.FILE_HEADER.Machine = 0x014c  # x86
     mock_pe.FILE_HEADER.TimeDateStamp = 1344615267  # 2012-08-11 12:34:27
@@ -46,8 +46,8 @@ def test_pe():
     mock_section.PointerToRawData = 0x200
     mock_section.get_data.return_value = b"test data"
     mock_pe.sections = [mock_section]
-    
-    # 模拟导入
+        
+        # 模拟导入
     mock_import_entry = MagicMock()
     mock_import_entry.dll = b"kernel32.dll"
     mock_import = MagicMock()
@@ -55,16 +55,16 @@ def test_pe():
     mock_import.address = 0x1234
     mock_import_entry.imports = [mock_import]
     mock_pe.DIRECTORY_ENTRY_IMPORT = [mock_import_entry]
-    
-    # 模拟导出
+        
+        # 模拟导出
     mock_export = MagicMock()
     mock_export.name = b"TestFunction"
     mock_export.ordinal = 1
     mock_export.address = 0x2000
     mock_pe.DIRECTORY_ENTRY_EXPORT = MagicMock()
     mock_pe.DIRECTORY_ENTRY_EXPORT.symbols = [mock_export]
-    
-    # 模拟资源
+        
+        # 模拟资源
     mock_resource_type = MagicMock()
     mock_resource_type.name = b"RT_ICON"
     mock_resource_type.struct.Id = 3
@@ -140,7 +140,6 @@ def test_get_pe_header_info(test_pe):
     assert header_info['image_base'] == '0x400000'
     assert header_info['number_of_sections'] == 5
     assert header_info['linkerversion'] == (10, 0)
-    # 注意：时间戳转换可能因时区而异，这里我们只验证格式
     assert isinstance(header_info['time_datetime_utc'], str)
     assert len(header_info['time_datetime_utc']) == 19  # YYYY-MM-DD HH:MM:SS
 

@@ -1,0 +1,45 @@
+name: Frontend Local
+
+on: workflow_dispatch
+
+env:
+  http_proxy: http://192.168.2.2:7890
+  https_proxy: http://192.168.2.2:7890
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure DNS
+        run: |
+          echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+          echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
+      
+      - name: Configure Git Proxy
+        run: |
+          git config --global http.proxy http://192.168.2.2:7890
+          git config --global https.proxy http://192.168.2.2:7890
+      
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        working-directory: ./argus-vue
+        run: npm ci
+        
+      - name: Run linting
+        working-directory: ./argus-vue
+        run: npm run lint
+        
+      - name: Run tests
+        working-directory: ./argus-vue
+        run: npm run test:unit
+        
+      - name: Build frontend
+        working-directory: ./argus-vue
+        run: npm run build 

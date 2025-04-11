@@ -4,29 +4,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
-from beanie import init_beanie
 from minio.error import MinioException
 from urllib3.exceptions import MaxRetryError
 
 from app.core.config import settings
 from app.core.storage import init_storage
+from app.db.init_db import init_db
 from app.api.v1.api import api_router
-from app.models.sample import Sample
-from app.models.user import User
-from app.models.yara import YaraRule
-from app.models.api_key import ApiKey
-from app.models.analysis import (
-    Task,
-    TaskCondition,
-    TaskStatus,
-    SampleAnalysisStatus,
-    AnalysisConfig,
-    SampleAnalysis,
-    AnalysisResult,
-    AnalysisSchedule
-)
-from app.models.migration import MigrationTask, MigrationFileStatus
 from app.core.scheduler import start_scheduler, stop_scheduler
+
 # 确保日志目录存在
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 log_dir = os.path.join(BASE_DIR, "logs")
@@ -79,43 +65,7 @@ async def startup_event():
     应用启动时初始化数据库连接和存储服务
     """
     try:
-        # 初始化MongoDB连接
-        client = AsyncIOMotorClient(settings.MONGODB_URL, serverSelectionTimeoutMS=5000)
-        # 测试连接
-        await client.server_info()
-        db = client[settings.MONGODB_DB]
-        
-        # 清理现有索引
-        collections = [
-            "samples", "users", "yara_rules", "scales", "api_keys",
-            "tasks", "task_conditions", "task_status", "sample_analysis_status",
-            "analysis_configs", "sample_analyses", "analysis_results", "analysis_schedules",
-            "migration_tasks", "migration_file_status"
-        ]
-        for collection_name in collections:
-            collection = db[collection_name]
-            await collection.drop_indexes()
-        
-        # 初始化Beanie
-        await init_beanie(
-            database=db,
-            document_models=[
-                Sample,
-                User,
-                YaraRule,
-                ApiKey,
-                Task,
-                TaskCondition,
-                TaskStatus,
-                SampleAnalysisStatus,
-                AnalysisConfig,
-                SampleAnalysis,
-                AnalysisResult,
-                AnalysisSchedule,
-                MigrationTask,
-                MigrationFileStatus
-            ]
-        )
+        await init_db()
         logger.info("Successfully connected to MongoDB")
         
         # 初始化存储服务
@@ -154,7 +104,7 @@ async def shutdown_event():
 @app.get("/")
 async def root():
     return JSONResponse({
-        "message": "Welcome to Snake Skin API",
+        "message": f"Welcome to {settings.PROJECT_NAME} API",
         "version": settings.VERSION,
         "docs_url": "/api/docs"
     })

@@ -2,7 +2,14 @@ from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from beanie import Document, Link, Indexed
 from pydantic import BaseModel, Field
-from .user import User
+from app.models.user import User
+from enum import Enum
+
+class SampleStatusEnum(str, Enum):
+    pending = "pending"
+    analyzing = "analyzing"
+    completed = "completed"
+    failed = "failed"
 
 class Sample(Document):
     """
@@ -12,11 +19,16 @@ class Sample(Document):
     description: Optional[str] = Field(None, description="样本描述")
     file_path: str = Field(..., description="文件路径")
     file_size: int = Field(..., description="文件大小")
-    file_type: str = Field(..., description="文件类型")
+    file_type: Optional[str] = Field(None, description="文件类型")
     sha256_digest: str = Field(..., description="SHA256哈希值", unique=True, index=True)
+    md5_digest: Optional[str] = Field(None, description="MD5哈希值", unique=True, index=True)
+    hash_info: Optional[Dict[str, Any]] = Field(None, description="哈希信息")
+    exiftool_info: Optional[Dict[str, Any]] = Field(None, description="exiftool信息")
+    magic_info: Optional[Dict[str, Any]] = Field(None, description="magic信息")
+    pe_info: Optional[Dict[str, Any]] = Field(None, description="pe信息")
     upload_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     uploader: Link[User] = Field(..., description="上传者")
-    analysis_status: str = Field(default="pending", description="分析状态")
+    analysis_status: SampleStatusEnum = Field(default=SampleStatusEnum.pending, description="分析状态")
     analysis_results: Optional[Dict[str, Any]] = None
     tags: List[str] = Field(default_factory=list, description="标签")
     notes: Optional[str] = None
@@ -79,8 +91,9 @@ class SampleResponse(BaseModel):
     description: Optional[str]
     file_path: str
     file_size: int
-    file_type: str
+    file_type: Optional[str]
     sha256_digest: str
+    md5_digest: Optional[str]
     upload_time: datetime
     uploader: str
     analysis_status: str

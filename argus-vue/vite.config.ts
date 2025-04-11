@@ -4,6 +4,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/',
   plugins: [vue()],
   resolve: {
     alias: {
@@ -19,19 +20,28 @@ export default defineConfig({
       }
     }
   },
+  preview: {
+    host: '0.0.0.0',
+    port: 4173,
+    strictPort: true,
+    historyApiFallback: true
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: true,
     chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'element-plus': ['element-plus'],
-          'vue-vendor': ['vue', 'vue-router', 'pinia'],
-          'axios': ['axios']
-        }
-      }
+    // rollupOptions: {
+    //   output: {
+    //     manualChunks: {
+    //       'element-plus': ['element-plus'],
+    //       'vue-vendor': ['vue', 'vue-router', 'pinia'],
+    //       'axios': ['axios']
+    //     }
+    //   }
+    // },
+    commonjsOptions: {
+      include: [/node_modules/]
     }
   }
 })

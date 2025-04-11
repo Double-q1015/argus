@@ -2,9 +2,14 @@
 
 import asyncio
 import sys
+import os
+# 添加项目根目录到Python路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+sys.path.insert(0, project_root)
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
-from app.models.user import User, pwd_context
+from app.models.user import User
 from app.models.sample import Sample
 from app.models.analysis import Task, TaskStatus, AnalysisConfig
 from app.services.analysis_config_service import AnalysisConfigService
@@ -35,19 +40,10 @@ async def create_hash_task():
     
     try:
         # 获取或创建测试用户
-        user = await User.find_one(User.email == 'test_hash@example.com')
+        user = await User.find_one(User.username == 'admin')
         if not user:
-            user = User(
-                username='test_user_hash',
-                email='test_hash@example.com',
-                hashed_password=pwd_context.hash('test123'),
-                is_active=True,
-                is_superuser=True
-            )
-            await user.insert()
-            print("Created test user")
-        else:
-            print("Using existing test user")
+            print("user not found")
+            return
         
         # 创建哈希分析配置
         config = await AnalysisConfigService.create_config(

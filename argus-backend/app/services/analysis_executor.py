@@ -5,12 +5,12 @@ from app.models.analysis import SampleAnalysis, AnalysisResult
 from app.models.sample import Sample
 from app.services.analysis_service import AnalysisService
 from app.core.exiftool_analyzer import perform_exiftool_analysis
-from app.core.pe_analyzer import analyze_pe_file
+from app.core.pe_analyzer import perform_pe_analysis
 from app.core.strings_analyzer import analyze_strings
 from app.core.yara_analyzer import analyze_yara
 from app.core.hash_analyzer import calculate_hashes
 from app.core.entropy_analyzer import calculate_entropy
-from app.core.magic_analyzer import get_file_type
+from app.core.magic_analyzer import perform_magic_analysis
 
 class AnalysisExecutor:
     """分析执行器"""
@@ -37,7 +37,7 @@ class AnalysisExecutor:
             if analysis.analysis_type == "exiftool":
                 result = await perform_exiftool_analysis(str(sample.file_path))
             elif analysis.analysis_type == "pe_info":
-                result = await analyze_pe_file(str(sample.file_path))
+                result = await perform_pe_analysis(str(sample.file_path))
             elif analysis.analysis_type == "strings":
                 result = await analyze_strings(str(sample.file_path))
             elif analysis.analysis_type == "yara":
@@ -47,7 +47,7 @@ class AnalysisExecutor:
             elif analysis.analysis_type == "entropy":
                 result = await calculate_entropy(str(sample.file_path))
             elif analysis.analysis_type == "magic":
-                result = await get_file_type(str(sample.file_path))
+                result = await perform_magic_analysis(str(sample.file_path))
             else:
                 raise ValueError(f"Unsupported analysis type: {analysis.analysis_type}")
                 
@@ -115,7 +115,7 @@ class AnalysisExecutor:
             raise ValueError(f"Sample not found: {sample_id}")
             
         # 获取文件类型
-        file_type = await get_file_type(str(sample.file_path))
+        file_type = await perform_magic_analysis(str(sample.file_path))
         
         # 根据文件类型选择分析类型
         analysis_types = ["hash", "entropy", "magic"]  # 基础分析类型
