@@ -20,69 +20,140 @@ apt install libimage-exiftool-perl
 * yara相关
 apt-get install yara
 
-## API
-### 认证模块 (auth.py)
+## 页面简介
+### 认证模块
+登录页面
+![](imgs/login.png)
 
-**安全特性：**
-* 密码加密：使用 bcrypt 加密
-* 登录限制：限制登录尝试次数
-* 验证码：防止暴力破解
-* JWT令牌：使用 JWT 进行身份验证
-* 密码强度验证：确保密码符合安全要求
-
-**路径:**
-* /auth
-
-功能: 
-* 用户认证
-* 登录
-* 注册
-
-注册
-```bash
-curl -X POST "http://localhost:8000/api/v1/auth/register?username=testuser&email=test@example.com&password=Test123!@#&is_active=true&is_superuser=false"
-```
-
-获取验证码
-```bash
-curl -X GET "http://localhost:8000/api/v1/auth/captcha?client_id=test123" -o captcha.png
-```
-
-### 样本管理 (samples.py)
-路径: /samples
-功能: 样本文件的上传、下载、查询等
+注册页面
 
 
-### 分析任务 (analysis.py, analyses.py, analysis_configs.py, analysis_results.py)
-路径: /analysis
+
+### 首页
+* 路径: /home
+* 功能: 首页数据展示
+
+**首页基本信息界面**
+![](imgs/home.png)
+
+
+### 搜索
+* 路径: /search
+* 功能: 全局搜索功能
+
+**搜索界面**
+![](imgs/search.png)
+
+**搜索提示界面**
+![](imgs/search-help.png)
+
+### 样本管理
+* 路径: /samples
+* 功能: 样本文件的上传、下载、查询详情等功能（样本详情的部分功能需要安装cape沙箱）
+
+**样本列表界面**
+![](imgs/sample-list.png)
+
+**样本上传界面**
+![](imgs/sample-upload.png)
+
+**样本详情界面**
+![](imgs/sample-detail.png)
+
+
+**情报IOC界面**
+
+目前均为模拟数据
+TODO:
+
+
+**行为分析界面**
+
+目前均为模拟数据
+TODO:
+
+**多维分析界面**
+
+多维分析部分主要集成了下面两部分（均需要Cape沙箱支持）
+* Yara规则扫描内存dump
+![](imgs/yara.png)
+* Sigma规则
+![](imgs/sigma.png)
+
+**引擎检测界面**
+
+目前均为模拟数据
+
+引擎检测部分只支持clamav，其他引擎均需要自己添加
+![](imgs/engine.png)
+
+
+
+### 分析任务
+
 功能: 分析任务的创建、配置、结果查询等
 
 ### Yara规则 (yara.py)
 路径: /yara
 功能: Yara规则的创建、更新、查询等
 
-### 首页 (endpoints/home.py)
-路径: /home
-功能: 首页数据展示
 
-### 搜索 (endpoints/search.py)
-路径: /search
-功能: 全局搜索功能
 
 ### 任务管理 (tasks.py)
-路径: /tasks
-功能: 后台任务管理
+* 路径: /tasks
+* 功能: 后台任务管理
 
 ### 用户管理 (users.py)
-路径: /users
-功能: 用户信息管理
+* 路径: /users
+* 功能: 用户信息管理，提供以下信息的设置
+
+**设置界面**
+![](imgs/setting.png)
+* 个人信息管理
+* API密钥管理
+* 系统主题管理
 
 ### 数据迁移 (migration.py)
 路径: /migration
-功能: 数据迁移相关操作
+
+功能: 文件存储引擎可以选择对象存储引擎或者本地文件存储，本模块提供本地存储和对象存储互相迁移的功能
+
+**样本迁移界面**
+![](imgs/migri.png)
 
 ### Exif工具 (exiftool.py)
 功能: 处理文件元数据
+
+## API说明
+### 用户
+#### 1、用户注册
+```bash
+curl -X POST "http://localhost:8000/api/v1/auth/register?username=testuser&email=test@example.com&password=Test123!@#&is_active=true&is_superuser=false"
+```
+
+#### 2、用户token获取（带验证码）
+
+**Step1: 获取验证码**
+```bash
+curl -X GET "http://localhost:8000/api/v1/auth/captcha?client_id=test123" -o captcha.png
+```
+
+**Step1: 带验证码登录**
+
+
+#### 3、用户token获取（不带验证码）
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/token -H 'Content-Type: application/x-www-form-urlencoded' -d 'username=usernamexxxx&password=passwordxxxx'
+```
+
+### 样本
+#### 文件上传
+
+#### 文件下载
+
+#### 文件删除
+
+### 信息查询
 
 ## PE节区信息
 Windows 资源语言和子语言的官方定义可以在以下位置找到：

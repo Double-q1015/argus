@@ -119,3 +119,39 @@ class SampleStats(BaseModel):
     samples_by_status: Dict[str, int]
     samples_by_type: Dict[str, int]
     recent_uploads: List[SampleResponse] 
+
+class SampleBaseInfo(BaseModel):
+    """
+    'fileName': '26c46fdf058abdf2d4cad1d8bcca0d686c1aa556...dc7ba1.zip',
+    'firstSubmit': '2025-04-10',
+    'lastSubmit': '2025-04-10',
+    'lastAnalysis': '2025-04-10 11:54:22',
+    'fileSize': '564.87 KB', 
+    'fileType': 'Zip archive data, at least v2.0 to extract',
+    'detectionCount': 8,
+    'engineCount': 28,
+    'threatType': '木马',
+    'threatLevel': '恶意',
+    'malwareFamily': 'AutoIt',
+    'malware_type_severity': 'medium',
+    'threatTypeDesc': '木马是一类会执行未经授权操作的恶意程序，如下载其他恶意程序和窃取隐私，会破坏系统的安全性',
+    'sha256': '13e69bf725e206a1129ddc5bd069f3298a0b0d3c92fe8fc5647c4471b1164bb2',
+    'md5': '23f38b4faf93cd3013007d90a712f4ef',
+    'sha1': 'dd9edcf2585d2c843151a8705e695e46a87d18e1'}
+    """
+    fileName: Optional[str]
+    firstSubmit: Optional[str]
+    lastSubmit: Optional[str]
+    lastAnalysis: Optional[str]
+    fileSize: Optional[str]
+    fileType: Optional[str]
+    detectionCount: int
+    engineCount: int
+    threatType: Optional[str]
+    threatLevel: Optional[str]
+    malwareFamily: Optional[str]
+    malware_type_severity: Optional[str]
+    threatTypeDesc: Optional[str]
+    sha256: Optional[str]
+    md5: Optional[str]
+    sha1: Optional[str]

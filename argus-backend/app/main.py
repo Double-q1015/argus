@@ -9,7 +9,7 @@ from urllib3.exceptions import MaxRetryError
 
 from app.core.config import settings
 from app.core.storage import init_storage
-from app.db.init_db import init_db
+from app.db.init_db import init_db, init_system_user
 from app.api.v1.api import api_router
 from app.core.scheduler import start_scheduler, stop_scheduler
 
@@ -67,6 +67,9 @@ async def startup_event():
     try:
         await init_db()
         logger.info("Successfully connected to MongoDB")
+
+        # 初始化系统用户
+        await init_system_user()
         
         # 初始化存储服务
         try:

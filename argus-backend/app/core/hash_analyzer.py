@@ -692,11 +692,14 @@ def verify_minio_file_hash(
             "expected_hash": expected_hash,
             "hash_type": hash_type
         } 
-
-if __name__ == "__main__":
+async def main():
     # 测试calculate_pehashng
     file_path = "tests/data/samples/malware/004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
-    hash_result = perform_hash_analysis(file_path)
-    print(f"peHashNG: {hash_result}")
+    hash_result = await perform_hash_analysis(file_path)
+    print(hash_result.to_dict())
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
     
     

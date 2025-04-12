@@ -53,6 +53,11 @@ const router = createRouter({
           component: Samples
         },
         {
+          path: 'samples/:sha256',
+          name: 'malware-detail',
+          component: () => import('@/views/samples/MalwareDetail.vue')
+        },
+        {
           path: 'yara/create',
           name: 'CreateYara',
           component: CreateYara
@@ -66,11 +71,6 @@ const router = createRouter({
           path: 'settings',
           name: 'Settings',
           component: Settings
-        },
-        {
-          path: 'samples/:sha256',
-          name: 'sample-detail',
-          component: () => import('@/views/SampleDetail.vue')
         },
         {
           path: 'tasks',

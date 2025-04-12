@@ -144,7 +144,7 @@ class PEImport(BaseModel):
         return {
             "dll_name": self.dll_name,
             "functions": [{"name": func["name"], "address": hex(func["address"])} for func in self.functions],
-            "function_count": self.function_count
+            "function_count": len(self.functions)
         }
 
 class PEExport(BaseModel):

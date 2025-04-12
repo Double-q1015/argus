@@ -212,6 +212,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, UploadFilled } from '@element-plus/icons-vue'
 import { getSamples, uploadSample, deleteSample, downloadSample } from '@/api/samples'
@@ -251,6 +252,9 @@ const uploadRules = {
 
 // 可用标签列表
 const availableTags = ref<string[]>([])
+
+// 获取 router 实例
+const router = useRouter()
 
 // 获取样本列表
 const fetchSamples = async () => {
@@ -328,8 +332,7 @@ const handleDelete = async (sample: Sample) => {
 
 // 查看详情
 const viewDetails = (sample: Sample) => {
-  selectedSample.value = sample
-  showDetailsDialog.value = true
+  router.push(`/samples/${sample.sha256_digest}`)
 }
 
 // 处理搜索

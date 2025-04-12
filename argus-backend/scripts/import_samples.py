@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 SAMPLE_DIR = "/data/Virusshare.00481"
 API_BASE_URL = "http://localhost:8000/api/v1"
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "admin123"
+ADMIN_PASSWORD = "Admin123!@#"
 
 async def get_access_token(session: aiohttp.ClientSession) -> Optional[str]:
     """获取访问令牌"""

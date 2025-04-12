@@ -35,17 +35,10 @@ class MagicResult(BaseModel):
     is_log: bool = False  # 是否为日志文件
     is_backup: bool = False  # 是否为备份文件
     is_temp: bool = False  # 是否为临时文件
-    is_hidden: bool = False  # 是否为隐藏文件
     is_system: bool = False  # 是否为系统文件
     is_encrypted: bool = False  # 是否为加密文件
     is_compressed: bool = False  # 是否为压缩文件
     is_corrupted: bool = False  # 是否为损坏文件
-    is_empty: bool = False  # 是否为空文件
-    is_symlink: bool = False  # 是否为符号链接
-    is_fifo: bool = False  # 是否为命名管道
-    is_socket: bool = False  # 是否为套接字
-    is_block: bool = False  # 是否为块设备
-    is_char: bool = False  # 是否为字符设备
     is_unknown: bool = False  # 是否为未知类型
 
     def to_dict(self) -> dict:
@@ -81,27 +74,12 @@ async def perform_magic_analysis(file_path: str) -> MagicResult:
             file_type=file_type_desc
         )
         
-        # 检查文件大小
-        file_size = os.path.getsize(file_path)
-        if file_size == 0:
-            result.is_empty = True
-            return result
             
-        # 检查文件属性
-        if os.path.islink(file_path):
-            result.is_symlink = True
-        if os.path.isfifo(file_path):
-            result.is_fifo = True
-        if os.path.issock(file_path):
-            result.is_socket = True
-        if os.path.isblk(file_path):
-            result.is_block = True
-        if os.path.ischr(file_path):
-            result.is_char = True
+
             
-        # 检查是否为隐藏文件
-        if os.path.basename(file_path).startswith('.'):
-            result.is_hidden = True
+        # # 检查是否为隐藏文件
+        # if os.path.basename(file_path).startswith('.'):
+        #     result.is_hidden = True
             
         # 根据MIME类型和文件类型描述判断文件类型
         mime_type_lower = mime_type.lower()
@@ -240,9 +218,19 @@ async def perform_magic_analysis(file_path: str) -> MagicResult:
         
     except Exception as e:
         # 发生错误时返回未知类型
+        print(f"发生错误: {e}")
         return MagicResult(
             mime_type="application/octet-stream",
             file_type="unknown",
             is_unknown=True,
             is_corrupted=True
         ) 
+    
+async def main():
+    file_path = "tests/data/samples/malware/004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5"
+    magic_result = await perform_magic_analysis(file_path)
+    print(f"Magic分析结果: {magic_result.to_dict()}")
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

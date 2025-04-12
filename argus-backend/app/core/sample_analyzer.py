@@ -109,7 +109,7 @@ async def check_pending_samples():
     # 查询新添加的样本并触发分析任务
     await init_db()
     pending_samples = await Sample.find({"analysis_status": SampleStatusEnum.pending}).to_list()
-    pending_samples = pending_samples[:10]
+    # pending_samples = pending_samples[:10]
     for sample in pending_samples:
         logger.info(f"Checking sample {sample.sha256_digest}")
         await on_sample_added(sample.sha256_digest)

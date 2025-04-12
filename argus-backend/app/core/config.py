@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     DESCRIPTION: str = "Argus API"
     # 系统用户
     SYSTEM_USER: str = "system_admin"
+    # 系统用户邮箱
+    SYSTEM_USER_EMAIL: str = "system_admin@argus.com"
     # 系统用户密码
     SYSTEM_USER_PASSWORD: str = "system_admin_password"
     

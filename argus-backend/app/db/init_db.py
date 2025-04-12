@@ -3,6 +3,7 @@ import logging
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
+from app.core.security import get_password_hash
 from app.core.config import settings
 from app.models.user import User
 from app.models.sample import Sample
@@ -53,3 +54,22 @@ async def init_db() -> None:
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
         raise
+
+async def init_system_user():
+    """
+    初始化系统用户
+    """
+    system_user = await User.find_one({"username": settings.SYSTEM_USER})
+    if not system_user:
+        hashed_password = get_password_hash(settings.SYSTEM_USER_PASSWORD)
+        user = User(
+            username=settings.SYSTEM_USER,
+            hashed_password=hashed_password,
+            email=settings.SYSTEM_USER_EMAIL,
+            is_active=True,
+            is_superuser=True
+        )
+        await user.save()
+        logger.info(f"System user {settings.SYSTEM_USER} initialized successfully")
+    else:
+        logger.info(f"System user {settings.SYSTEM_USER} already exists")
