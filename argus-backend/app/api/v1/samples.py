@@ -2,12 +2,13 @@ import hashlib
 import logging
 from datetime import datetime
 from typing import List, Optional, Dict, Any
+from fastapi.encoders import jsonable_encoder
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query, Form
 from pymongo import DESCENDING
 
 from app.core.storage import storage, upload_sample, delete_sample
 from app.models.user import User
-from app.models.sample import Sample, SampleResponse, SampleStats, SampleBaseInfo
+from app.models.sample import Sample, SampleResponse, SampleStats, SampleBaseInfo, SampleStaticInfo, peinfo
 from app.api.v1.auth import get_current_user
 from app.core.config import settings
 
@@ -405,6 +406,747 @@ async def get_sample_baseinfo(
             detail="Sample not found"
         )
 
+# 获取样本的静态信息
+@router.get("/{sha256_digest}/static", response_model=Dict[str, Any])
+async def get_sample_static(
+    sha256_digest: str,
+    current_user: User = Depends(get_current_user)
+):
+    """获取样本的静态信息"""
+    {
+          "baseInfo": {
+              "文件名称": "004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5",
+              "文件格式": "EXEx86",
+              "文件Magic": "PE32 executable (console) Intel 80386, for MS Windows",
+              "文件大小": "14.55KB",
+              "SHA256": "004ad8ce84b9ab95d4c38a9d7b23dce68d134c696c1362625ad38153b48038e5",
+              "SHA1": "6cf5dc082af22c2863f3b925aaa06bb3e0513c46",
+              "MD5": "5b63ebdc906a189ee6dae807246506e5",
+              "CRC32": "E3ACAD6A",
+              "SSDEEP": "384:hdtXWiJCQxsEwvK3RpSSHuGQG2Rqm4YhYEL:hDXWipuE+K3/SSHgxmE",
+              "TLSH": "T19B627C2AE9499036C3E804F813B6C367BA7F51A1534523E7BB735DDC8D48490EC63A6D",
+              "AuthentiHash": "69D14FD09682A3755FA87602F209D560DE2B6707C39D0E8328695FABE6C46A01",
+              "peHashNG": "5f9a88f0f6969e294313fd8413845b0eef6379c5e2a9ed05a740741bc779f05f",
+              "RichHash": "410c803093d4c1afcacac1e0055b360f",
+              "impfuzzy": "24:kd1BzeLKTUdQr+FzJTGPJ/3M/Tl5F6O58yldfDKb:c1leLtdkiKM/wO5ZldfDKb",
+              "ImpHash": "432c342c05744facf1143abcda5d68c4",
+              "Tags": "exe,pdb_path,lang_english"
+          },
+          "findCrypt": [],
+          "pe": {
+              "pdbMap": {
+                  "PDB": "C:\\ping_pong\\win_client\\Release\\win_client.pdb",
+                  "GUID": None
+              },
+              "resourcesMap": [
+                  {
+                      "name": "RT_MANIFEST",
+                      "filetype": "ASCII text, with CRLF line terminators",
+                      "size": "0x0000015a",
+                      "offset": "0x00004058",
+                      "language": "LANG_ENGLISH",
+                      "sublanguage": "SUBLANG_ENGLISH_US"
+                  }
+              ],
+              "importsMap": [
+                  {
+                      "dll": "KERNEL32.dll",
+                      "imports": [
+                          {
+                              "address": "0x402000",
+                              "name": "Sleep"
+                          },
+                          {
+                              "address": "0x402004",
+                              "name": "CreateProcessA"
+                          },
+                          {
+                              "address": "0x402008",
+                              "name": "GetTempFileNameA"
+                          },
+                          {
+                              "address": "0x40200c",
+                              "name": "GetModuleFileNameA"
+                          },
+                          {
+                              "address": "0x402010",
+                              "name": "CloseHandle"
+                          },
+                          {
+                              "address": "0x402014",
+                              "name": "GetTempPathA"
+                          },
+                          {
+                              "address": "0x402018",
+                              "name": "GetSystemTimeAsFileTime"
+                          },
+                          {
+                              "address": "0x40201c",
+                              "name": "GetCurrentProcessId"
+                          },
+                          {
+                              "address": "0x402020",
+                              "name": "GetCurrentThreadId"
+                          },
+                          {
+                              "address": "0x402024",
+                              "name": "GetTickCount"
+                          },
+                          {
+                              "address": "0x402028",
+                              "name": "QueryPerformanceCounter"
+                          },
+                          {
+                              "address": "0x40202c",
+                              "name": "DecodePointer"
+                          },
+                          {
+                              "address": "0x402030",
+                              "name": "IsDebuggerPresent"
+                          },
+                          {
+                              "address": "0x402034",
+                              "name": "SetUnhandledExceptionFilter"
+                          },
+                          {
+                              "address": "0x402038",
+                              "name": "UnhandledExceptionFilter"
+                          },
+                          {
+                              "address": "0x40203c",
+                              "name": "GetCurrentProcess"
+                          },
+                          {
+                              "address": "0x402040",
+                              "name": "TerminateProcess"
+                          },
+                          {
+                              "address": "0x402044",
+                              "name": "EncodePointer"
+                          },
+                          {
+                              "address": "0x402048",
+                              "name": "InterlockedCompareExchange"
+                          },
+                          {
+                              "address": "0x40204c",
+                              "name": "InterlockedExchange"
+                          },
+                          {
+                              "address": "0x402050",
+                              "name": "HeapSetInformation"
+                          }
+                      ],
+                      "count": 21
+                  },
+                  {
+                      "dll": "SHELL32.dll",
+                      "imports": [
+                          {
+                              "address": "0x4020f0",
+                              "name": "ShellExecuteA"
+                          }
+                      ],
+                      "count": 1
+                  },
+                  {
+                      "dll": "WS2_32.dll",
+                      "imports": [
+                          {
+                              "address": "0x4020f8",
+                              "name": "inet_addr"
+                          },
+                          {
+                              "address": "0x4020fc",
+                              "name": "WSAGetLastError"
+                          },
+                          {
+                              "address": "0x402100",
+                              "name": "htons"
+                          },
+                          {
+                              "address": "0x402104",
+                              "name": "WSAStartup"
+                          },
+                          {
+                              "address": "0x402108",
+                              "name": "recv"
+                          },
+                          {
+                              "address": "0x40210c",
+                              "name": "socket"
+                          },
+                          {
+                              "address": "0x402110",
+                              "name": "send"
+                          },
+                          {
+                              "address": "0x402114",
+                              "name": "connect"
+                          },
+                          {
+                              "address": "0x402118",
+                              "name": "WSACleanup"
+                          }
+                      ],
+                      "count": 9
+                  },
+                  {
+                      "dll": "MSVCR100.dll",
+                      "imports": [
+                          {
+                              "address": "0x402058",
+                              "name": "printf"
+                          },
+                          {
+                              "address": "0x40205c",
+                              "name": "fopen"
+                          },
+                          {
+                              "address": "0x402060",
+                              "name": "fread"
+                          },
+                          {
+                              "address": "0x402064",
+                              "name": "rand"
+                          },
+                          {
+                              "address": "0x402068",
+                              "name": "srand"
+                          },
+                          {
+                              "address": "0x40206c",
+                              "name": "fwrite"
+                          },
+                          {
+                              "address": "0x402070",
+                              "name": "ftell"
+                          },
+                          {
+                              "address": "0x402074",
+                              "name": "fseek"
+                          },
+                          {
+                              "address": "0x402078",
+                              "name": "fclose"
+                          },
+                          {
+                              "address": "0x40207c",
+                              "name": "_time64"
+                          },
+                          {
+                              "address": "0x402080",
+                              "name": "_snprintf"
+                          },
+                          {
+                              "address": "0x402084",
+                              "name": "_amsg_exit"
+                          },
+                          {
+                              "address": "0x402088",
+                              "name": "__getmainargs"
+                          },
+                          {
+                              "address": "0x40208c",
+                              "name": "_cexit"
+                          },
+                          {
+                              "address": "0x402090",
+                              "name": "_exit"
+                          },
+                          {
+                              "address": "0x402094",
+                              "name": "_XcptFilter"
+                          },
+                          {
+                              "address": "0x402098",
+                              "name": "exit"
+                          },
+                          {
+                              "address": "0x40209c",
+                              "name": "__initenv"
+                          },
+                          {
+                              "address": "0x4020a0",
+                              "name": "_initterm"
+                          },
+                          {
+                              "address": "0x4020a4",
+                              "name": "_initterm_e"
+                          },
+                          {
+                              "address": "0x4020a8",
+                              "name": "_configthreadlocale"
+                          },
+                          {
+                              "address": "0x4020ac",
+                              "name": "__setusermatherr"
+                          },
+                          {
+                              "address": "0x4020b0",
+                              "name": "_commode"
+                          },
+                          {
+                              "address": "0x4020b4",
+                              "name": "_fmode"
+                          },
+                          {
+                              "address": "0x4020b8",
+                              "name": "__set_app_type"
+                          },
+                          {
+                              "address": "0x4020bc",
+                              "name": "_crt_debugger_hook"
+                          },
+                          {
+                              "address": "0x4020c0",
+                              "name": "?terminate@@YAXXZ"
+                          },
+                          {
+                              "address": "0x4020c4",
+                              "name": "_unlock"
+                          },
+                          {
+                              "address": "0x4020c8",
+                              "name": "__dllonexit"
+                          },
+                          {
+                              "address": "0x4020cc",
+                              "name": "_lock"
+                          },
+                          {
+                              "address": "0x4020d0",
+                              "name": "_onexit"
+                          },
+                          {
+                              "address": "0x4020d4",
+                              "name": "_except_handler4_common"
+                          },
+                          {
+                              "address": "0x4020d8",
+                              "name": "_invoke_watson"
+                          },
+                          {
+                              "address": "0x4020dc",
+                              "name": "_controlfp_s"
+                          },
+                          {
+                              "address": "0x4020e0",
+                              "name": "atoi"
+                          },
+                          {
+                              "address": "0x4020e4",
+                              "name": "malloc"
+                          },
+                          {
+                              "address": "0x4020e8",
+                              "name": "memset"
+                          }
+                      ],
+                      "count": 37
+                  }
+              ],
+              "signcheckMap": [
+                  {
+                      "value": [
+                          {
+                              "name": "Unsigned"
+                          }
+                      ],
+                      "key": "签名验证"
+                  }
+              ],
+              "exportsMap": [],
+              "tlsInfoMap": {},
+              "fileMap": {
+                  "urls": [],
+                  "strings": {
+                      "Unicode": [
+                          "cmd.exe /C ping -w 50 -n 1 1.1.1.1 > Nul & Del "
+                      ],
+                      "ASCII": [
+                          "__getmainargs",
+                          "GetTempPathA",
+                          "echo_and_return: Sending echo token...",
+                          "RSDS`b",
+                          "10.180.0.115",
+                          "_amsg_exit",
+                          "echo_and_return: The test string sent: \"%s\"",
+                          "%s:%d DATA CORRUPT.",
+                          "C:\\ping_pong\\win_client\\Release\\win_client.pdb",
+                          "_initterm",
+                          "get_port_from_controller: connect() is OK.",
+                          "get_port_from_controller:: Received data is: \"%s\"",
+                          "%s \"%s\"",
+                          "CloseHandle",
+                          "EncodePointer",
+                          "file_size is: %d",
+                          "GetCurrentThreadId",
+                          "%s: option requires an argument -- %.*s",
+                          "ADAMANDPRASHANTAREAWESOME",
+                          "malloc",
+                          "WS2_32.dll",
+                          "echo_and_return: send() error %ld.",
+                          "_time64",
+                          "_onexit",
+                          "%s: option does not take an argument -- %.*s",
+                          "GetTempFileNameA",
+                          "InterlockedCompareExchange",
+                          "Got controller port: %d",
+                          "get_port_from_controller: connect() - Failed to connect and get port.",
+                          "_except_handler4_common",
+                          "[!]Failed to get echo port from server.",
+                          "%s:%d DATA OK.",
+                          "CreateProcessA",
+                          "_crt_debugger_hook",
+                          "Attempting to execute: %s",
+                          "__initenv",
+                          "echo_and_return: send() is OK - Bytes sent: %ld",
+                          "Client: WSAStartup() is OK.",
+                          "__dllonexit",
+                          "_snprintf",
+                          "SetUnhandledExceptionFilter",
+                          "ShellExecuteA",
+                          "get_port_from_controller: Connection Closed.",
+                          "_unlock",
+                          "echo_and_return: connect() - Failed to connect to server(%s) port:%d",
+                          "GetSystemTimeAsFileTime",
+                          "Client: Error at WSAStartup().",
+                          "TerminateProcess",
+                          "_fmode",
+                          "get_port_from_controller:: Bytes received is: %ld.",
+                          "UnhandledExceptionFilter",
+                          "echo_and_return: socket() is OK.",
+                          "memset",
+                          "Got my filename: %s",
+                          "QueryPerformanceCounter",
+                          "_invoke_watson",
+                          "IsDebuggerPresent",
+                          "DecodePointer",
+                          "Wrote %d bytes to %s",
+                          "fwrite",
+                          "GetTickCount",
+                          "?terminate@@YAXXZ",
+                          "_XcptFilter",
+                          "GetModuleFileNameA",
+                          "get_port_from_controller:: Received data is: \"%d\"",
+                          "Unable to open: %s",
+                          "get_port_from_controller: Getting echo port...",
+                          "__setusermatherr",
+                          "_controlfp_s",
+                          "_configthreadlocale",
+                          "__set_app_type",
+                          "get_port_from_controller: socket() is OK.",
+                          "HeapSetInformation",
+                          "_initterm_e",
+                          "echo_and_return: socket() - Error at socket(): %ld",
+                          "SHELL32.dll",
+                          "echo_and_return: connect() is OK.",
+                          "get_port_from_controller:: recv() is OK.",
+                          "printf",
+                          "_cexit",
+                          "_commode",
+                          "InterlockedExchange",
+                          "get_port_from_controller: socket() - Error at socket(): %ld",
+                          "KERNEL32.dll",
+                          "GetCurrentProcessId",
+                          "MSVCR100.dll",
+                          "fclose",
+                          "GetCurrentProcess",
+                          "  <trustInfo xmlns=\"urn:schemas-microsoft-com:asm.v3\">",
+                          "</assembly>PA",
+                          "  </trustInfo>",
+                          "    <security>",
+                          "      <requestedPrivileges>",
+                          "    </security>",
+                          "        <requestedExecutionLevel level=\"asInvoker\" uiAccess=\"false\"></requestedExecutionLevel>",
+                          "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">",
+                          "      </requestedPrivileges>",
+                          "3)4/4<4J4Q4g4",
+                          "6$606C6L6S6q6|6",
+                          "8(8;8E8J8O8q8v8",
+                          ":\":(:.:4:::@:G:N:U:\\:c:j:q:y:",
+                          ";_;e;n;u;",
+                          "=/=M=a=g=",
+                          "9%9.949<9H9Z9e9k9}9",
+                          "?&?,?2?8?>?D?J?P?V?",
+                          ";.<3<T<Y<x<",
+                          "14191D1L1i1",
+                          "2&252:2E2\\2c2q2x2",
+                          "0=0d0j0p0y0",
+                          "525T5b5n5",
+                          "7!7L7q7",
+                          "$10141\\1`1",
+                          "2*3E3L3v3"
+                      ]
+                  }
+              },
+              "headMap": {
+                  "平台": "Intel 386 or later processors and compatible processors",
+                  "子系统": "Windows character-mode user interface (CUI) subsystem",
+                  "编译时间戳": "2012-08-11 00:14:27",
+                  "入口点(OEP)": "0x1a0c",
+                  "入口所在段": ".text",
+                  "镜像基地址": "0x400000",
+                  "节区数量": 5,
+                  "LinkerVersion": 10
+              },
+              "sectionsMap": [
+                  {
+                      "name": ".text",
+                      "virtual_address": "0x00001000",
+                      "virtual_size": "0x00000f5a",
+                      "pointer_to_rawdata": "0x00000400",
+                      "size_of_data": "0x00001000",
+                      "SectionPermission": "R-E",
+                      "entropy": 6.004661832472822,
+                      "section_hash": "11e71d6b64d3f84fd96375bec2a90941"
+                  }
+              ]
+          },
+          "magika": {},
+          "exifTool": {
+              "FileType": "Win32 EXE",
+              "FileTypeExtension": "exe",
+              "MIMEType": "application/octet-stream",
+              "MachineType": "Intel 386 or later, and compatibles",
+              "TimeStamp": "2012:08:11 00:14:27+08:00",
+              "ImageFileCharacteristics": "Executable, 32-bit",
+              "PEType": "PE32",
+              "LinkerVersion": "10.0",
+              "CodeSize": 4096,
+              "InitializedDataSize": 5632,
+              "UninitializedDataSize": 0,
+              "EntryPoint": "0x1a0c",
+              "OSVersion": "5.1",
+              "ImageVersion": "0.0",
+              "SubsystemVersion": "5.1",
+              "Subsystem": "Windows command line"
+          },
+          "diec": {
+              "链接器": "Microsoft Linker(10.00.30319)",
+              "编译器": "Microsoft Visual C/C++(16.00.30319)[LTCG/C++]",
+              "工具": "Visual Studio(2010)",
+              "字节序": "LE",
+              "模式": "32",
+              "程序类型": "Console",
+              "文件类型": "PE32",
+              "熵": 6.539594101865142,
+              "语言": "C/C++",
+              "操作系统": "Windows(XP)[I386, 32位, Console]"
+          },
+          "trid": {
+              "32.2% (.EXE)": "Microsoft Visual C++ compiled executable (generic) (16529/12/5)",
+              "20.5% (.EXE)": "Win64 Executable (generic) (10523/12/4)",
+              "12.8% (.DLL)": "Win32 Dynamic Link Library (generic) (6578/25/2)",
+              "9.8% (.EXE)": "Win16 NE executable (generic) (5038/12/1)",
+              "8.7% (.EXE)": "Win32 Executable (generic) (4505/5/1)"
+          }
+      }
+    sample:Optional[Sample] = await Sample.find_one({"sha256_digest": sha256_digest})
+    if not sample:
+        raise HTTPException(
+            status_code=404,
+            detail="Sample not found"
+        )
+    try:
+        if sample:
+            base_info = SampleBaseInfo(
+                fileName=sample.file_name,
+                firstSubmit=sample.upload_time.isoformat() if sample.upload_time else '',
+                lastSubmit=sample.upload_time.isoformat() if sample.upload_time else '',
+                lastAnalysis=sample.upload_time.isoformat() if sample.upload_time else '',
+                fileSize=sample.file_size,
+                fileType=sample.magic_info.get('file_type', '') if sample.magic_info else '',
+                sha256=sample.sha256_digest,
+                md5=sample.hash_info.get('md5', '') if sample.hash_info else '',
+                sha1=sample.hash_info.get('sha1', '') if sample.hash_info else '',
+                sha512=sample.hash_info.get('sha512', '') if sample.hash_info else '',
+                crc32=sample.hash_info.get('crc32', '') if sample.hash_info else '',
+                ssdeep=sample.hash_info.get('ssdeep', '') if sample.hash_info else '',
+                peHashNG=sample.pe_info.get('metadata', {}).get('pehashng', '') if sample.pe_info else '',
+            )
+            pe_info = peinfo(
+                pdbMap=sample.pe_info.get('metadata', {}).get('debug_info', {}) if sample.pe_info else {},
+                resourcesMap=sample.pe_info.get('resources', []) if sample.pe_info else [],
+                importsMap=sample.pe_info.get('imports', []) if sample.pe_info else [],
+                exportsMap=sample.pe_info.get('exports', []) if sample.pe_info else [],
+                signcheckMap=sample.pe_info.get('signcheck', []) if sample.pe_info else [],
+                tlsInfoMap=sample.pe_info.get('tls_info', {}) if sample.pe_info else {},
+                fileMap={
+                  "urls": [],
+                  "strings": {
+                      "Unicode": [
+                          "cmd.exe /C ping -w 50 -n 1 1.1.1.1 > Nul & Del "
+                      ],
+                      "ASCII": [
+                          "__getmainargs",
+                          "GetTempPathA",
+                          "echo_and_return: Sending echo token...",
+                          "RSDS`b",
+                          "10.180.0.115",
+                          "_amsg_exit",
+                          "echo_and_return: The test string sent: \"%s\"",
+                          "%s:%d DATA CORRUPT.",
+                          "C:\\ping_pong\\win_client\\Release\\win_client.pdb",
+                          "_initterm",
+                          "get_port_from_controller: connect() is OK.",
+                          "get_port_from_controller:: Received data is: \"%s\"",
+                          "%s \"%s\"",
+                          "CloseHandle",
+                          "EncodePointer",
+                          "file_size is: %d",
+                          "GetCurrentThreadId",
+                          "%s: option requires an argument -- %.*s",
+                          "ADAMANDPRASHANTAREAWESOME",
+                          "malloc",
+                          "WS2_32.dll",
+                          "echo_and_return: send() error %ld.",
+                          "_time64",
+                          "_onexit",
+                          "%s: option does not take an argument -- %.*s",
+                          "GetTempFileNameA",
+                          "InterlockedCompareExchange",
+                          "Got controller port: %d",
+                          "get_port_from_controller: connect() - Failed to connect and get port.",
+                          "_except_handler4_common",
+                          "[!]Failed to get echo port from server.",
+                          "%s:%d DATA OK.",
+                          "CreateProcessA",
+                          "_crt_debugger_hook",
+                          "Attempting to execute: %s",
+                          "__initenv",
+                          "echo_and_return: send() is OK - Bytes sent: %ld",
+                          "Client: WSAStartup() is OK.",
+                          "__dllonexit",
+                          "_snprintf",
+                          "SetUnhandledExceptionFilter",
+                          "ShellExecuteA",
+                          "get_port_from_controller: Connection Closed.",
+                          "_unlock",
+                          "echo_and_return: connect() - Failed to connect to server(%s) port:%d",
+                          "GetSystemTimeAsFileTime",
+                          "Client: Error at WSAStartup().",
+                          "TerminateProcess",
+                          "_fmode",
+                          "get_port_from_controller:: Bytes received is: %ld.",
+                          "UnhandledExceptionFilter",
+                          "echo_and_return: socket() is OK.",
+                          "memset",
+                          "Got my filename: %s",
+                          "QueryPerformanceCounter",
+                          "_invoke_watson",
+                          "IsDebuggerPresent",
+                          "DecodePointer",
+                          "Wrote %d bytes to %s",
+                          "fwrite",
+                          "GetTickCount",
+                          "?terminate@@YAXXZ",
+                          "_XcptFilter",
+                          "GetModuleFileNameA",
+                          "get_port_from_controller:: Received data is: \"%d\"",
+                          "Unable to open: %s",
+                          "get_port_from_controller: Getting echo port...",
+                          "__setusermatherr",
+                          "_controlfp_s",
+                          "_configthreadlocale",
+                          "__set_app_type",
+                          "get_port_from_controller: socket() is OK.",
+                          "HeapSetInformation",
+                          "_initterm_e",
+                          "echo_and_return: socket() - Error at socket(): %ld",
+                          "SHELL32.dll",
+                          "echo_and_return: connect() is OK.",
+                          "get_port_from_controller:: recv() is OK.",
+                          "printf",
+                          "_cexit",
+                          "_commode",
+                          "InterlockedExchange",
+                          "get_port_from_controller: socket() - Error at socket(): %ld",
+                          "KERNEL32.dll",
+                          "GetCurrentProcessId",
+                          "MSVCR100.dll",
+                          "fclose",
+                          "GetCurrentProcess",
+                          "  <trustInfo xmlns=\"urn:schemas-microsoft-com:asm.v3\">",
+                          "</assembly>PA",
+                          "  </trustInfo>",
+                          "    <security>",
+                          "      <requestedPrivileges>",
+                          "    </security>",
+                          "        <requestedExecutionLevel level=\"asInvoker\" uiAccess=\"false\"></requestedExecutionLevel>",
+                          "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">",
+                          "      </requestedPrivileges>",
+                          "3)4/4<4J4Q4g4",
+                          "6$606C6L6S6q6|6",
+                          "8(8;8E8J8O8q8v8",
+                          ":\":(:.:4:::@:G:N:U:\\:c:j:q:y:",
+                          ";_;e;n;u;",
+                          "=/=M=a=g=",
+                          "9%9.949<9H9Z9e9k9}9",
+                          "?&?,?2?8?>?D?J?P?V?",
+                          ";.<3<T<Y<x<",
+                          "14191D1L1i1",
+                          "2&252:2E2\\2c2q2x2",
+                          "0=0d0j0p0y0",
+                          "525T5b5n5",
+                          "7!7L7q7",
+                          "$10141\\1`1",
+                          "2*3E3L3v3"
+                      ]
+                  }
+              },
+                headMap=sample.pe_info.get('metadata', {}).get('pe_heade_info', {}) if sample.pe_info else {},
+                sectionsMap=sample.pe_info.get('sections', []) if sample.pe_info else [],
+            )
+            static_info = SampleStaticInfo(
+                baseInfo=base_info,
+                exifTool=sample.exiftool_info,
+                pe=pe_info,
+                magika={},
+                findCrypt=[],
+                diec= {
+                    "链接器": "Microsoft Linker(10.00.30319)",
+                    "编译器": "Microsoft Visual C/C++(16.00.30319)[LTCG/C++]",
+                    "工具": "Visual Studio(2010)",
+                    "字节序": "LE",
+                    "模式": "32",
+                    "程序类型": "Console",
+                    "文件类型": "PE32",
+                    "熵": 6.539594101865142,
+                    "语言": "C/C++",
+                    "操作系统": "Windows(XP)[I386, 32位, Console]"
+                },
+                trid= {
+                    "32.2% (.EXE)": "Microsoft Visual C++ compiled executable (generic) (16529/12/5)",
+                    "20.5% (.EXE)": "Win64 Executable (generic) (10523/12/4)",
+                    "12.8% (.DLL)": "Win32 Dynamic Link Library (generic) (6578/25/2)",
+                    "9.8% (.EXE)": "Win16 NE executable (generic) (5038/12/1)",
+                    "8.7% (.EXE)": "Win32 Executable (generic) (4505/5/1)"
+                    }
+            )
+        return {
+            'data': 
+                jsonable_encoder(static_info, exclude_unset=True)
+        }
+    except Exception as e:
+        logger.error(f"获取{sha256_digest}文件基础信息失败{e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Sample not found"
+        )
+
+# 获取样本的IOC信息
+@router.get("/{sha256_digest}/ioc", response_model=Dict[str, Any])
+async def get_sample_ioc(
+    sha256_digest: str,
+    current_user: User = Depends(get_current_user)
+):
+    """获取样本的IOC信息"""
+    # 暂时跳过返回固定的信息
+    return {
+        "data": []
+    }
 
 # 获取样本的行为检测
 @router.get("/{sha256_digest}/behavior", response_model=Dict[str, Any])
@@ -1728,9 +2470,605 @@ async def get_sample_sigma(
     # 暂时跳过返回固定的信息
     return {
         "data": {
-            "sigma_rules": []
+          "grouped": {
+              "Win10(1903 64bit,Office2016)": [
+                  {
+                      "title": "Scheduled temp file as task from temp location",
+                      "description": "Scheduled temp file as task from temp location",
+                      "tags": [],
+                      "level": "critical",
+                      "order": 15,
+                      "matches": [
+                          {
+                              "row_id": 9,
+                              "Image": "C:\\Windows\\SysWOW64\\schtasks.exe",
+                              "ProcessGuid": "E0B5ADED-3E8C-67F7-8701-000000002E00",
+                              "ProcessId": 6288,
+                              "RuleName": "-",
+                              "UtcTime": "2025-04-10 03:44:12.256",
+                              "EventID": 1,
+                              "Keywords": "0x8000000000000000",
+                              "Level": 4,
+                              "Opcode": 0,
+                              "Task": 1,
+                              "CommandLine": "\"schtasks.exe\" /create /f /tn \"IMAP Service Task\" /xml \"C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmp65AB.tmp\"",
+                              "Company": "Microsoft Corporation",
+                              "CurrentDirectory": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\",
+                              "Description": "Task Scheduler Configuration Tool",
+                              "Hashes": "MD5=387A4D4FCACD57E5801353159439240E,SHA256=BA97DD9D346C8A478579EDA863504D492FE75B66B9830AF1AACDF1BF2F6513B5,IMPHASH=8F05AFD593956F9A0A28D77A05092AB8",
+                              "IntegrityLevel": "High",
+                              "LogonGuid": "E0B5ADED-C936-656F-8DDA-020000000000",
+                              "LogonId": "0x2da8d",
+                              "OriginalFileName": "schtasks.exe",
+                              "ParentCommandLine": "\"C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe\"",
+                              "ParentImage": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                              "ParentProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                              "ParentProcessId": 7672,
+                              "Product": "Microsoft® Windows® Operating System",
+                              "TerminalSessionId": 1
+                          },
+                          {
+                              "row_id": 11,
+                              "Image": "C:\\Windows\\SysWOW64\\schtasks.exe",
+                              "ProcessGuid": "E0B5ADED-3E8B-67F7-8101-000000002E00",
+                              "ProcessId": 7572,
+                              "RuleName": "-",
+                              "UtcTime": "2025-04-10 03:44:11.657",
+                              "EventID": 1,
+                              "Keywords": "0x8000000000000000",
+                              "Level": 4,
+                              "Opcode": 0,
+                              "Task": 1,
+                              "CommandLine": "\"schtasks.exe\" /create /f /tn \"IMAP Service\" /xml \"C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmp6349.tmp\"",
+                              "Company": "Microsoft Corporation",
+                              "CurrentDirectory": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\",
+                              "Description": "Task Scheduler Configuration Tool",
+                              "Hashes": "MD5=387A4D4FCACD57E5801353159439240E,SHA256=BA97DD9D346C8A478579EDA863504D492FE75B66B9830AF1AACDF1BF2F6513B5,IMPHASH=8F05AFD593956F9A0A28D77A05092AB8",
+                              "IntegrityLevel": "High",
+                              "LogonGuid": "E0B5ADED-C936-656F-8DDA-020000000000",
+                              "LogonId": "0x2da8d",
+                              "OriginalFileName": "schtasks.exe",
+                              "ParentCommandLine": "\"C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe\"",
+                              "ParentImage": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                              "ParentProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                              "ParentProcessId": 7672,
+                              "Product": "Microsoft® Windows® Operating System",
+                              "TerminalSessionId": 1
+                          }
+                      ],
+                      "source": "JoeSecurity",
+                      "sandboxType": [
+                          "Win10(1903 64bit,Office2016)"
+                      ],
+                      "sbTypeForGroup": "Win10(1903 64bit,Office2016)"
+                  },
+                  {
+                      "title": "Suspicius Add Task From User AppData Temp",
+                      "description": "schtasks.exe create task from user AppData\\Local\\Temp",
+                      "tags": [
+                          "execution",
+                          "t1053.005"
+                      ],
+                      "level": "high",
+                      "order": 13,
+                      "matches": [
+                          {
+                              "row_id": 9,
+                              "Image": "C:\\Windows\\SysWOW64\\schtasks.exe",
+                              "ProcessGuid": "E0B5ADED-3E8C-67F7-8701-000000002E00",
+                              "ProcessId": 6288,
+                              "RuleName": "-",
+                              "UtcTime": "2025-04-10 03:44:12.256",
+                              "EventID": 1,
+                              "Keywords": "0x8000000000000000",
+                              "Level": 4,
+                              "Opcode": 0,
+                              "Task": 1,
+                              "CommandLine": "\"schtasks.exe\" /create /f /tn \"IMAP Service Task\" /xml \"C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmp65AB.tmp\"",
+                              "Company": "Microsoft Corporation",
+                              "CurrentDirectory": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\",
+                              "Description": "Task Scheduler Configuration Tool",
+                              "Hashes": "MD5=387A4D4FCACD57E5801353159439240E,SHA256=BA97DD9D346C8A478579EDA863504D492FE75B66B9830AF1AACDF1BF2F6513B5,IMPHASH=8F05AFD593956F9A0A28D77A05092AB8",
+                              "IntegrityLevel": "High",
+                              "LogonGuid": "E0B5ADED-C936-656F-8DDA-020000000000",
+                              "LogonId": "0x2da8d",
+                              "OriginalFileName": "schtasks.exe",
+                              "ParentCommandLine": "\"C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe\"",
+                              "ParentImage": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                              "ParentProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                              "ParentProcessId": 7672,
+                              "Product": "Microsoft® Windows® Operating System",
+                              "TerminalSessionId": 1
+                          },
+                          {
+                              "row_id": 11,
+                              "Image": "C:\\Windows\\SysWOW64\\schtasks.exe",
+                              "ProcessGuid": "E0B5ADED-3E8B-67F7-8101-000000002E00",
+                              "ProcessId": 7572,
+                              "RuleName": "-",
+                              "UtcTime": "2025-04-10 03:44:11.657",
+                              "EventID": 1,
+                              "Keywords": "0x8000000000000000",
+                              "Level": 4,
+                              "Opcode": 0,
+                              "Task": 1,
+                              "CommandLine": "\"schtasks.exe\" /create /f /tn \"IMAP Service\" /xml \"C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmp6349.tmp\"",
+                              "Company": "Microsoft Corporation",
+                              "CurrentDirectory": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\",
+                              "Description": "Task Scheduler Configuration Tool",
+                              "Hashes": "MD5=387A4D4FCACD57E5801353159439240E,SHA256=BA97DD9D346C8A478579EDA863504D492FE75B66B9830AF1AACDF1BF2F6513B5,IMPHASH=8F05AFD593956F9A0A28D77A05092AB8",
+                              "IntegrityLevel": "High",
+                              "LogonGuid": "E0B5ADED-C936-656F-8DDA-020000000000",
+                              "LogonId": "0x2da8d",
+                              "OriginalFileName": "schtasks.exe",
+                              "ParentCommandLine": "\"C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe\"",
+                              "ParentImage": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                              "ParentProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                              "ParentProcessId": 7672,
+                              "Product": "Microsoft® Windows® Operating System",
+                              "TerminalSessionId": 1
+                          }
+                      ],
+                      "source": "SigmaHQ",
+                      "sandboxType": [
+                          "Win10(1903 64bit,Office2016)"
+                      ],
+                      "sbTypeForGroup": "Win10(1903 64bit,Office2016)"
+                  },
+                  {
+                      "title": "Autorun Keys Modification",
+                      "description": "Detects modification of autostart extensibility point (ASEP) in registry.",
+                      "tags": [
+                          "persistence",
+                          "t1547.001",
+                          "t1060"
+                      ],
+                      "level": "medium",
+                      "order": 11,
+                      "matches": [
+                          {
+                              "row_id": 12,
+                              "Details": "C:\\Program Files (x86)\\IMAP Service\\imapsvc.exe",
+                              "EventType": "SetValue",
+                              "Image": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                              "ProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                              "ProcessId": 7672,
+                              "RuleName": "T1060,RunKey",
+                              "TargetObject": "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Run\\IMAP Service",
+                              "UtcTime": "2025-04-10 03:44:11.506",
+                              "EventID": 13,
+                              "Keywords": "0x8000000000000000",
+                              "Level": 4,
+                              "Opcode": 0,
+                              "Task": 13
+                          },
+                          {
+                              "row_id": 17,
+                              "Details": "Binary Data",
+                              "EventType": "SetValue",
+                              "Image": "C:\\Python27\\pythonw.exe",
+                              "ProcessGuid": "E0B5ADED-3E71-67F7-9F00-000000002E00",
+                              "ProcessId": 5440,
+                              "RuleName": "T1183,IFEO",
+                              "TargetObject": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\dc7ba1.exe\\MitigationOptions",
+                              "UtcTime": "2025-04-10 03:44:08.640",
+                              "EventID": 13,
+                              "Keywords": "0x8000000000000000",
+                              "Level": 4,
+                              "Opcode": 0,
+                              "Task": 13
+                          },
+                          {
+                              "row_id": 18,
+                              "Details": "Binary Data",
+                              "EventType": "SetValue",
+                              "Image": "C:\\Python27\\pythonw.exe",
+                              "ProcessGuid": "E0B5ADED-3E71-67F7-9F00-000000002E00",
+                              "ProcessId": 5440,
+                              "RuleName": "T1183,IFEO",
+                              "TargetObject": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\dc7ba1.exe\\MitigationAuditOptions",
+                              "UtcTime": "2025-04-10 03:44:08.640",
+                              "EventID": 13,
+                              "Keywords": "0x8000000000000000",
+                              "Level": 4,
+                              "Opcode": 0,
+                              "Task": 13
+                          },
+                          {
+                              "row_id": 19,
+                              "Details": "Binary Data",
+                              "EventType": "SetValue",
+                              "Image": "C:\\Python27\\pythonw.exe",
+                              "ProcessGuid": "E0B5ADED-3E71-67F7-9F00-000000002E00",
+                              "ProcessId": 5440,
+                              "RuleName": "T1183,IFEO",
+                              "TargetObject": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\dc7ba1.exe\\MitigationOptions",
+                              "UtcTime": "2025-04-10 03:44:08.640",
+                              "EventID": 13,
+                              "Keywords": "0x8000000000000000",
+                              "Level": 4,
+                              "Opcode": 0,
+                              "Task": 13
+                          },
+                          {
+                              "row_id": 20,
+                              "Details": "Binary Data",
+                              "EventType": "SetValue",
+                              "Image": "C:\\Python27\\pythonw.exe",
+                              "ProcessGuid": "E0B5ADED-3E71-67F7-9F00-000000002E00",
+                              "ProcessId": 5440,
+                              "RuleName": "T1183,IFEO",
+                              "TargetObject": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\dc7ba1.exe\\MitigationAuditOptions",
+                              "UtcTime": "2025-04-10 03:44:08.640",
+                              "EventID": 13,
+                              "Keywords": "0x8000000000000000",
+                              "Level": 4,
+                              "Opcode": 0,
+                              "Task": 13
+                          }
+                      ],
+                      "source": "SigmaHQ",
+                      "sandboxType": [
+                          "Win10(1903 64bit,Office2016)"
+                      ],
+                      "sbTypeForGroup": "Win10(1903 64bit,Office2016)"
+                  },
+                  {
+                      "title": "Possible Applocker Bypass",
+                      "description": "Detects execution of executables that can be used to bypass Applocker whitelisting",
+                      "tags": [
+                          "defense_evasion",
+                          "t1118",
+                          "t1218.004",
+                          "t1121",
+                          "t1218.009",
+                          "t1127",
+                          "t1127.001",
+                          "t1170",
+                          "t1218.005",
+                          "t1218"
+                      ],
+                      "level": "low",
+                      "order": 9,
+                      "matches": [
+                          {
+                              "row_id": 15,
+                              "Image": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                              "ProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                              "ProcessId": 7672,
+                              "RuleName": "-",
+                              "UtcTime": "2025-04-10 03:44:10.022",
+                              "EventID": 1,
+                              "Keywords": "0x8000000000000000",
+                              "Level": 4,
+                              "Opcode": 0,
+                              "Task": 1,
+                              "CommandLine": "\"C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe\"",
+                              "Company": "Microsoft Corporation",
+                              "CurrentDirectory": "C:\\Users\\Administrator\\Desktop\\26c46f\\",
+                              "Description": "Microsoft .NET Assembly Registration Utility",
+                              "Hashes": "MD5=8B27AF7F70807AB602290FFA63628422,SHA256=424BF38DBCC3C6786E4C82EF3BC64956060B4CDFD54FF581B59ADC7A03E34154,IMPHASH=F34D5F2D4577ED6D9CEEC516C1F5A744",
+                              "IntegrityLevel": "High",
+                              "LogonGuid": "E0B5ADED-C936-656F-8DDA-020000000000",
+                              "LogonId": "0x2da8d",
+                              "OriginalFileName": "RegAsm.exe",
+                              "ParentCommandLine": "\"C:\\Users\\Administrator\\Desktop\\26c46f\\dc7ba1.exe\" ",
+                              "ParentImage": "C:\\Users\\Administrator\\Desktop\\26c46f\\dc7ba1.exe",
+                              "ParentProcessGuid": "E0B5ADED-3E88-67F7-7801-000000002E00",
+                              "ParentProcessId": 7504,
+                              "Product": "Microsoft® .NET Framework",
+                              "TerminalSessionId": 1
+                          }
+                      ],
+                      "source": "SigmaHQ",
+                      "sandboxType": [
+                          "Win10(1903 64bit,Office2016)"
+                      ],
+                      "sbTypeForGroup": "Win10(1903 64bit,Office2016)"
+                  }
+              ]
+          },
+          "sandboxtypes": [
+              "Win10(1903 64bit,Office2016)"
+          ],
+          "merged": [
+              {
+                  "title": "Scheduled temp file as task from temp location",
+                  "description": "Scheduled temp file as task from temp location",
+                  "tags": [],
+                  "level": "critical",
+                  "order": 15,
+                  "matches": [
+                      {
+                          "row_id": 9,
+                          "Image": "C:\\Windows\\SysWOW64\\schtasks.exe",
+                          "ProcessGuid": "E0B5ADED-3E8C-67F7-8701-000000002E00",
+                          "ProcessId": 6288,
+                          "RuleName": "-",
+                          "UtcTime": "2025-04-10 03:44:12.256",
+                          "EventID": 1,
+                          "Keywords": "0x8000000000000000",
+                          "Level": 4,
+                          "Opcode": 0,
+                          "Task": 1,
+                          "CommandLine": "\"schtasks.exe\" /create /f /tn \"IMAP Service Task\" /xml \"C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmp65AB.tmp\"",
+                          "Company": "Microsoft Corporation",
+                          "CurrentDirectory": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\",
+                          "Description": "Task Scheduler Configuration Tool",
+                          "Hashes": "MD5=387A4D4FCACD57E5801353159439240E,SHA256=BA97DD9D346C8A478579EDA863504D492FE75B66B9830AF1AACDF1BF2F6513B5,IMPHASH=8F05AFD593956F9A0A28D77A05092AB8",
+                          "IntegrityLevel": "High",
+                          "LogonGuid": "E0B5ADED-C936-656F-8DDA-020000000000",
+                          "LogonId": "0x2da8d",
+                          "OriginalFileName": "schtasks.exe",
+                          "ParentCommandLine": "\"C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe\"",
+                          "ParentImage": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                          "ParentProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                          "ParentProcessId": 7672,
+                          "Product": "Microsoft® Windows® Operating System",
+                          "TerminalSessionId": 1
+                      },
+                      {
+                          "row_id": 11,
+                          "Image": "C:\\Windows\\SysWOW64\\schtasks.exe",
+                          "ProcessGuid": "E0B5ADED-3E8B-67F7-8101-000000002E00",
+                          "ProcessId": 7572,
+                          "RuleName": "-",
+                          "UtcTime": "2025-04-10 03:44:11.657",
+                          "EventID": 1,
+                          "Keywords": "0x8000000000000000",
+                          "Level": 4,
+                          "Opcode": 0,
+                          "Task": 1,
+                          "CommandLine": "\"schtasks.exe\" /create /f /tn \"IMAP Service\" /xml \"C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmp6349.tmp\"",
+                          "Company": "Microsoft Corporation",
+                          "CurrentDirectory": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\",
+                          "Description": "Task Scheduler Configuration Tool",
+                          "Hashes": "MD5=387A4D4FCACD57E5801353159439240E,SHA256=BA97DD9D346C8A478579EDA863504D492FE75B66B9830AF1AACDF1BF2F6513B5,IMPHASH=8F05AFD593956F9A0A28D77A05092AB8",
+                          "IntegrityLevel": "High",
+                          "LogonGuid": "E0B5ADED-C936-656F-8DDA-020000000000",
+                          "LogonId": "0x2da8d",
+                          "OriginalFileName": "schtasks.exe",
+                          "ParentCommandLine": "\"C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe\"",
+                          "ParentImage": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                          "ParentProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                          "ParentProcessId": 7672,
+                          "Product": "Microsoft® Windows® Operating System",
+                          "TerminalSessionId": 1
+                      }
+                  ],
+                  "source": "JoeSecurity",
+                  "sandboxType": [
+                      "Win10(1903 64bit,Office2016)"
+                  ],
+                  "sbTypeForGroup": "Win10(1903 64bit,Office2016)"
+              },
+              {
+                  "title": "Suspicius Add Task From User AppData Temp",
+                  "description": "schtasks.exe create task from user AppData\\Local\\Temp",
+                  "tags": [
+                      "execution",
+                      "t1053.005"
+                  ],
+                  "level": "high",
+                  "order": 13,
+                  "matches": [
+                      {
+                          "row_id": 9,
+                          "Image": "C:\\Windows\\SysWOW64\\schtasks.exe",
+                          "ProcessGuid": "E0B5ADED-3E8C-67F7-8701-000000002E00",
+                          "ProcessId": 6288,
+                          "RuleName": "-",
+                          "UtcTime": "2025-04-10 03:44:12.256",
+                          "EventID": 1,
+                          "Keywords": "0x8000000000000000",
+                          "Level": 4,
+                          "Opcode": 0,
+                          "Task": 1,
+                          "CommandLine": "\"schtasks.exe\" /create /f /tn \"IMAP Service Task\" /xml \"C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmp65AB.tmp\"",
+                          "Company": "Microsoft Corporation",
+                          "CurrentDirectory": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\",
+                          "Description": "Task Scheduler Configuration Tool",
+                          "Hashes": "MD5=387A4D4FCACD57E5801353159439240E,SHA256=BA97DD9D346C8A478579EDA863504D492FE75B66B9830AF1AACDF1BF2F6513B5,IMPHASH=8F05AFD593956F9A0A28D77A05092AB8",
+                          "IntegrityLevel": "High",
+                          "LogonGuid": "E0B5ADED-C936-656F-8DDA-020000000000",
+                          "LogonId": "0x2da8d",
+                          "OriginalFileName": "schtasks.exe",
+                          "ParentCommandLine": "\"C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe\"",
+                          "ParentImage": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                          "ParentProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                          "ParentProcessId": 7672,
+                          "Product": "Microsoft® Windows® Operating System",
+                          "TerminalSessionId": 1
+                      },
+                      {
+                          "row_id": 11,
+                          "Image": "C:\\Windows\\SysWOW64\\schtasks.exe",
+                          "ProcessGuid": "E0B5ADED-3E8B-67F7-8101-000000002E00",
+                          "ProcessId": 7572,
+                          "RuleName": "-",
+                          "UtcTime": "2025-04-10 03:44:11.657",
+                          "EventID": 1,
+                          "Keywords": "0x8000000000000000",
+                          "Level": 4,
+                          "Opcode": 0,
+                          "Task": 1,
+                          "CommandLine": "\"schtasks.exe\" /create /f /tn \"IMAP Service\" /xml \"C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmp6349.tmp\"",
+                          "Company": "Microsoft Corporation",
+                          "CurrentDirectory": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\",
+                          "Description": "Task Scheduler Configuration Tool",
+                          "Hashes": "MD5=387A4D4FCACD57E5801353159439240E,SHA256=BA97DD9D346C8A478579EDA863504D492FE75B66B9830AF1AACDF1BF2F6513B5,IMPHASH=8F05AFD593956F9A0A28D77A05092AB8",
+                          "IntegrityLevel": "High",
+                          "LogonGuid": "E0B5ADED-C936-656F-8DDA-020000000000",
+                          "LogonId": "0x2da8d",
+                          "OriginalFileName": "schtasks.exe",
+                          "ParentCommandLine": "\"C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe\"",
+                          "ParentImage": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                          "ParentProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                          "ParentProcessId": 7672,
+                          "Product": "Microsoft® Windows® Operating System",
+                          "TerminalSessionId": 1
+                      }
+                  ],
+                  "source": "SigmaHQ",
+                  "sandboxType": [
+                      "Win10(1903 64bit,Office2016)"
+                  ],
+                  "sbTypeForGroup": "Win10(1903 64bit,Office2016)"
+              },
+              {
+                  "title": "Autorun Keys Modification",
+                  "description": "Detects modification of autostart extensibility point (ASEP) in registry.",
+                  "tags": [
+                      "persistence",
+                      "t1547.001",
+                      "t1060"
+                  ],
+                  "level": "medium",
+                  "order": 11,
+                  "matches": [
+                      {
+                          "row_id": 12,
+                          "Details": "C:\\Program Files (x86)\\IMAP Service\\imapsvc.exe",
+                          "EventType": "SetValue",
+                          "Image": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                          "ProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                          "ProcessId": 7672,
+                          "RuleName": "T1060,RunKey",
+                          "TargetObject": "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Run\\IMAP Service",
+                          "UtcTime": "2025-04-10 03:44:11.506",
+                          "EventID": 13,
+                          "Keywords": "0x8000000000000000",
+                          "Level": 4,
+                          "Opcode": 0,
+                          "Task": 13
+                      },
+                      {
+                          "row_id": 17,
+                          "Details": "Binary Data",
+                          "EventType": "SetValue",
+                          "Image": "C:\\Python27\\pythonw.exe",
+                          "ProcessGuid": "E0B5ADED-3E71-67F7-9F00-000000002E00",
+                          "ProcessId": 5440,
+                          "RuleName": "T1183,IFEO",
+                          "TargetObject": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\dc7ba1.exe\\MitigationOptions",
+                          "UtcTime": "2025-04-10 03:44:08.640",
+                          "EventID": 13,
+                          "Keywords": "0x8000000000000000",
+                          "Level": 4,
+                          "Opcode": 0,
+                          "Task": 13
+                      },
+                      {
+                          "row_id": 18,
+                          "Details": "Binary Data",
+                          "EventType": "SetValue",
+                          "Image": "C:\\Python27\\pythonw.exe",
+                          "ProcessGuid": "E0B5ADED-3E71-67F7-9F00-000000002E00",
+                          "ProcessId": 5440,
+                          "RuleName": "T1183,IFEO",
+                          "TargetObject": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\dc7ba1.exe\\MitigationAuditOptions",
+                          "UtcTime": "2025-04-10 03:44:08.640",
+                          "EventID": 13,
+                          "Keywords": "0x8000000000000000",
+                          "Level": 4,
+                          "Opcode": 0,
+                          "Task": 13
+                      },
+                      {
+                          "row_id": 19,
+                          "Details": "Binary Data",
+                          "EventType": "SetValue",
+                          "Image": "C:\\Python27\\pythonw.exe",
+                          "ProcessGuid": "E0B5ADED-3E71-67F7-9F00-000000002E00",
+                          "ProcessId": 5440,
+                          "RuleName": "T1183,IFEO",
+                          "TargetObject": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\dc7ba1.exe\\MitigationOptions",
+                          "UtcTime": "2025-04-10 03:44:08.640",
+                          "EventID": 13,
+                          "Keywords": "0x8000000000000000",
+                          "Level": 4,
+                          "Opcode": 0,
+                          "Task": 13
+                      },
+                      {
+                          "row_id": 20,
+                          "Details": "Binary Data",
+                          "EventType": "SetValue",
+                          "Image": "C:\\Python27\\pythonw.exe",
+                          "ProcessGuid": "E0B5ADED-3E71-67F7-9F00-000000002E00",
+                          "ProcessId": 5440,
+                          "RuleName": "T1183,IFEO",
+                          "TargetObject": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\dc7ba1.exe\\MitigationAuditOptions",
+                          "UtcTime": "2025-04-10 03:44:08.640",
+                          "EventID": 13,
+                          "Keywords": "0x8000000000000000",
+                          "Level": 4,
+                          "Opcode": 0,
+                          "Task": 13
+                      }
+                  ],
+                  "source": "SigmaHQ",
+                  "sandboxType": [
+                      "Win10(1903 64bit,Office2016)"
+                  ],
+                  "sbTypeForGroup": "Win10(1903 64bit,Office2016)"
+              },
+              {
+                  "title": "Possible Applocker Bypass",
+                  "description": "Detects execution of executables that can be used to bypass Applocker whitelisting",
+                  "tags": [
+                      "defense_evasion",
+                      "t1118",
+                      "t1218.004",
+                      "t1121",
+                      "t1218.009",
+                      "t1127",
+                      "t1127.001",
+                      "t1170",
+                      "t1218.005",
+                      "t1218"
+                  ],
+                  "level": "low",
+                  "order": 9,
+                  "matches": [
+                      {
+                          "row_id": 15,
+                          "Image": "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe",
+                          "ProcessGuid": "E0B5ADED-3E8A-67F7-7B01-000000002E00",
+                          "ProcessId": 7672,
+                          "RuleName": "-",
+                          "UtcTime": "2025-04-10 03:44:10.022",
+                          "EventID": 1,
+                          "Keywords": "0x8000000000000000",
+                          "Level": 4,
+                          "Opcode": 0,
+                          "Task": 1,
+                          "CommandLine": "\"C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\RegAsm.exe\"",
+                          "Company": "Microsoft Corporation",
+                          "CurrentDirectory": "C:\\Users\\Administrator\\Desktop\\26c46f\\",
+                          "Description": "Microsoft .NET Assembly Registration Utility",
+                          "Hashes": "MD5=8B27AF7F70807AB602290FFA63628422,SHA256=424BF38DBCC3C6786E4C82EF3BC64956060B4CDFD54FF581B59ADC7A03E34154,IMPHASH=F34D5F2D4577ED6D9CEEC516C1F5A744",
+                          "IntegrityLevel": "High",
+                          "LogonGuid": "E0B5ADED-C936-656F-8DDA-020000000000",
+                          "LogonId": "0x2da8d",
+                          "OriginalFileName": "RegAsm.exe",
+                          "ParentCommandLine": "\"C:\\Users\\Administrator\\Desktop\\26c46f\\dc7ba1.exe\" ",
+                          "ParentImage": "C:\\Users\\Administrator\\Desktop\\26c46f\\dc7ba1.exe",
+                          "ParentProcessGuid": "E0B5ADED-3E88-67F7-7801-000000002E00",
+                          "ParentProcessId": 7504,
+                          "Product": "Microsoft® .NET Framework",
+                          "TerminalSessionId": 1
+                      }
+                  ],
+                  "source": "SigmaHQ",
+                  "sandboxType": [
+                      "Win10(1903 64bit,Office2016)"
+                  ],
+                  "sbTypeForGroup": "Win10(1903 64bit,Office2016)"
+              }
+          ]
+      }
         }
-    }
 
 # 获取样本的多引擎检测结果
 @router.get("/{sha256_digest}/multi_engine_detection", response_model=Dict[str, Any])

@@ -124,6 +124,26 @@ TODO:
 ### Exif工具 (exiftool.py)
 功能: 处理文件元数据
 
+## 部署
+### 1、单独部署后端
+* 1、cd到后端目录
+* 2、修改环境变量和config文件
+    * argus-backend/.env
+    * argus-backend/app/core/config.py
+* 3、使用Dockerfile编译镜像
+    ```docker
+    docker run -d --name argus-container argus-latest
+    ```
+    **Tips**: `argus-backend/Dockerfile`中配置了代理，你可以改为自己的代理，也可以注释掉
+* 4、使用编译好的镜像启动一个容器
+    ```bash
+    docker run -itd -p 8000:8000 --name argus-container argus-latest
+    ```
+### 2、单独部署前端
+
+### 3、demo环境（前端+后端+mongodb+minio）
+
+
 ## API说明
 ### 用户
 #### 1、用户注册
@@ -154,6 +174,15 @@ curl -X POST http://localhost:8000/api/v1/auth/token -H 'Content-Type: applicati
 #### 文件删除
 
 ### 信息查询
+
+## TODO
+### 漏洞详情页
+* 1、漏洞详情页面添加 [magika](https://github.com/google/magika) 工具
+* 2、漏洞详情页面添加 [Die](https://github.com/horsicq/DIE-engine/releases) 工具
+* 3、漏洞详情页面添加 [Trid]() 工具
+
+### API管理
+
 
 ## PE节区信息
 Windows 资源语言和子语言的官方定义可以在以下位置找到：

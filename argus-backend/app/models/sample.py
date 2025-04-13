@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 from beanie import Document, Link, Indexed
 from pydantic import BaseModel, Field
 from app.models.user import User
+from app.models.exiftool import ExifToolMetadata
 from enum import Enum
 
 class SampleStatusEnum(str, Enum):
@@ -137,16 +138,21 @@ class SampleBaseInfo(BaseModel):
     'threatTypeDesc': '木马是一类会执行未经授权操作的恶意程序，如下载其他恶意程序和窃取隐私，会破坏系统的安全性',
     'sha256': '13e69bf725e206a1129ddc5bd069f3298a0b0d3c92fe8fc5647c4471b1164bb2',
     'md5': '23f38b4faf93cd3013007d90a712f4ef',
-    'sha1': 'dd9edcf2585d2c843151a8705e695e46a87d18e1'}
+    'sha1': 'dd9edcf2585d2c843151a8705e695e46a87d18e1'
+    "sha512": "",
+    "CRC32": "E3ACAD6A",
+    "SSDEEP": "384:hdtXWiJCQxsEwvK3RpSSHuGQG2Rqm4YhYEL:hDXWipuE+K3/SSHgxmE",
+    "peHashNG": "5f9a88f0f6969e294313fd8413845b0eef6379c5e2a9ed05a740741bc779f05f",}
     """
+
     fileName: Optional[str]
     firstSubmit: Optional[str]
     lastSubmit: Optional[str]
     lastAnalysis: Optional[str]
     fileSize: Optional[str]
     fileType: Optional[str]
-    detectionCount: int
-    engineCount: int
+    detectionCount: Optional[int]
+    engineCount: Optional[int]
     threatType: Optional[str]
     threatLevel: Optional[str]
     malwareFamily: Optional[str]
@@ -155,3 +161,34 @@ class SampleBaseInfo(BaseModel):
     sha256: Optional[str]
     md5: Optional[str]
     sha1: Optional[str]
+    sha512: Optional[str]
+    crc32: Optional[str]
+    ssdeep: Optional[str]
+    peHashNG: Optional[str]
+
+
+class SampleStaticInfo(BaseModel):
+    """
+    样本静态信息模型
+    """
+    baseInfo: SampleBaseInfo
+    exifTool: Optional[ExifToolMetadata]
+    pe: Optional[Dict[str, Any]]
+    findCrypt: Optional[List[Dict[str, Any]]]
+    diec: Optional[Dict[str, Any]]
+    magika: Optional[Dict[str, Any]]
+    trid: Optional[Dict[str, Any]]
+
+class peinfo(BaseModel):
+    """
+    peinfo模型
+    """
+    pdbMap: Dict[str, Any]
+    resourcesMap: List[Dict[str, Any]]
+    importsMap: List[Dict[str, Any]]
+    exportsMap: List[Dict[str, Any]]
+    signcheckMap: List[Dict[str, Any]]
+    tlsInfoMap: Dict[str, Any]
+    fileMap: Dict[str, Any]
+    headMap: Dict[str, Any]
+    sectionsMap: List[Dict[str, Any]]

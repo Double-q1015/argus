@@ -38,14 +38,14 @@ class Settings(BaseSettings):
 
 
     # MongoDB配置
-    MONGODB_URL: str = "mongodb://192.168.2.9:27017"
+    MONGODB_URL: str = "mongodb://192.168.139.128:27017"
     MONGODB_DB: str = "argus"
 
     MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 10MB
     ALLOWED_EXTENSIONS: List[str] = ["jpg", "jpeg", "png", "gif"]
 
     # MinIO配置
-    MINIO_ENDPOINT: str = "192.168.2.9:9000"
+    MINIO_ENDPOINT: str = "192.168.139.128:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin"
     MINIO_BUCKET_NAME: str = "malware"
