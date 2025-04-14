@@ -16,10 +16,10 @@ RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
 RUN echo "nameserver 114.114.114.114" >> /etc/resolv.conf
 
 # 设置代理
-ENV http_proxy=http://192.168.139.1:7890
-ENV https_proxy=http://192.168.139.1:7890
-ENV HTTP_PROXY=http://192.168.139.1:7890
-ENV HTTPS_PROXY=http://192.168.139.1:7890
+ENV http_proxy=http://192.168.2.2:7890
+ENV https_proxy=http://192.168.2.2:7890
+ENV HTTP_PROXY=http://192.168.2.2:7890
+ENV HTTPS_PROXY=http://192.168.2.2:7890
 
 # 安装系统依赖
 RUN apt-get update && apt-get install -y \
@@ -51,8 +51,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 配置 git 使用代理
-RUN git config --global http.proxy http://192.168.139.1:7890 && \
-    git config --global https.proxy http://192.168.139.1:7890
+RUN git config --global http.proxy http://192.168.2.2:7890 && \
+    git config --global https.proxy http://192.168.2.2:7890
 
 # 安装 Miniconda
 FROM base as conda
