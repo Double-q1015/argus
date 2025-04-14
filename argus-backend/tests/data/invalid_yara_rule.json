@@ -1,0 +1,12 @@
+{
+    "name": "InvalidRule",
+    "description": "An invalid YARA rule",
+    "content": "rule InvalidRule { strings: $a = \"invalid\" condition: $a",  // 缺少右括号
+    "is_active": true,
+    "is_public": false,
+    "tags": ["test", "invalid"],
+    "metadata": {
+        "author": "test_user",
+        "version": "1.0"
+    }
+} 

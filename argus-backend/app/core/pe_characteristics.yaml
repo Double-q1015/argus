@@ -1,0 +1,70 @@
+suspicious_dlls:
+  - name: "kernel32.dll"
+    risk_level: "high"
+    description: "系统核心DLL"
+  - name: "advapi32.dll"
+    risk_level: "medium"
+    description: "高级Windows API"
+  - name: "ws2_32.dll"
+    risk_level: "medium"
+    description: "网络通信DLL"
+  - name: "wininet.dll"
+    risk_level: "medium"
+    description: "网络功能DLL"
+  - name: "urlmon.dll"
+    risk_level: "medium"
+    description: "URL处理DLL"
+  - name: "ole32.dll"
+    risk_level: "medium"
+    description: "COM组件DLL"
+
+suspicious_functions:
+  - name: "CreateRemoteThread"
+    risk_level: "high"
+    description: "远程线程创建"
+  - name: "WriteProcessMemory"
+    risk_level: "high"
+    description: "进程内存写入"
+  - name: "VirtualAlloc"
+    risk_level: "high"
+    description: "虚拟内存分配"
+  - name: "socket"
+    risk_level: "medium"
+    description: "网络套接字创建"
+  - name: "connect"
+    risk_level: "medium"
+    description: "网络连接"
+  - name: "InternetOpenUrl"
+    risk_level: "medium"
+    description: "URL打开"
+  - name: "URLDownloadToFile"
+    risk_level: "high"
+    description: "文件下载"
+  - name: "CoCreateInstance"
+    risk_level: "medium"
+    description: "COM对象创建"
+  - name: "ShellExecute"
+    risk_level: "high"
+    description: "Shell命令执行"
+
+suspicious_sections:
+  names:
+    - name: "UPX0"
+      risk_level: "high"
+      description: "UPX加壳特征"
+    - name: "UPX1"
+      risk_level: "high"
+      description: "UPX加壳特征"
+    - name: "ASPack"
+      risk_level: "high"
+      description: "ASPack加壳特征"
+  
+  characteristics:
+    - combination: ["EXECUTE", "WRITE"]
+      risk_level: "high"
+      description: "可执行且可写节区"
+
+entropy_thresholds:
+  high: 7.0
+  medium: 6.5
+  low: 6.0 

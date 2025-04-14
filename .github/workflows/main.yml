@@ -1,0 +1,213 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  http_proxy: http://192.168.2.2:7890
+  https_proxy: http://192.168.2.2:7890
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:20.04
+      options: --dns 8.8.8.8 --dns 8.8.4.4 --dns 114.114.114.114
+    services:
+      minio:
+        image: minio/minio
+        ports:
+          - 9000:9000
+          - 9001:9001
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+          MINIO_BROWSER: "on"
+          MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y wget bash curl
+          echo "nameserver 8.8.8.8" > /etc/resolv.conf
+          echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+          echo "nameserver 114.114.114.114" >> /etc/resolv.conf
+          
+      - name: Install Node.js
+        shell: bash
+        run: |
+          curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+          apt-get install -y nodejs
+          npm install -g npm@latest
+          
+      - name: Install frontend dependencies
+        shell: bash
+        run: |
+          cd argus-vue
+          npm install
+          
+      - name: Run frontend tests
+        shell: bash
+        run: |
+          cd argus-vue
+          npm run test:unit
+          
+      - name: Build frontend
+        shell: bash
+        run: |
+          cd argus-vue
+          npm run build
+          
+      - name: Upload frontend build
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: argus-vue/dist
+
+  backend:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:20.04
+      options: --dns 8.8.8.8 --dns 8.8.4.4 --dns 114.114.114.114
+    services:
+      mongodb:
+        image: mongo:4.4
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      minio:
+        image: minio/minio
+        ports:
+          - 9000:9000
+          - 9001:9001
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+          MINIO_BROWSER: "on"
+          MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y wget bash
+          echo "nameserver 8.8.8.8" > /etc/resolv.conf
+          echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+          echo "nameserver 114.114.114.114" >> /etc/resolv.conf
+          
+      - name: Install Miniconda
+        shell: bash
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda
+          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
+          conda init bash
+          source $HOME/.bashrc
+          
+      - name: Create conda environment
+        shell: bash
+        run: |
+          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
+          conda create -y -n argus python=3.10
+          conda activate argus
+          python --version
+          
+      - name: Install dependencies
+        shell: bash
+        run: |
+          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
+          conda activate argus
+          pip install -r argus-backend/requirements.txt
+          
+      - name: Run backend tests
+        shell: bash
+        run: |
+          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
+          conda activate argus
+          cd argus-backend
+          python -m pytest
+
+  build:
+    needs: [frontend, backend]
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:20.04
+      options: --dns 8.8.8.8 --dns 8.8.4.4 --dns 114.114.114.114
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y wget bash
+          echo "nameserver 8.8.8.8" > /etc/resolv.conf
+          echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+          echo "nameserver 114.114.114.114" >> /etc/resolv.conf
+          
+      - name: Install Miniconda
+        shell: bash
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda
+          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
+          conda init bash
+          source $HOME/.bashrc
+          
+      - name: Create conda environment
+        shell: bash
+        run: |
+          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
+          conda create -y -n argus python=3.10
+          conda activate argus
+          
+      - name: Build project
+        shell: bash
+        run: |
+          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
+          conda activate argus
+          cd argus-backend
+          python setup.py build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:20.04
+      options: --dns 8.8.8.8 --dns 8.8.4.4 --dns 114.114.114.114
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y wget bash
+          echo "nameserver 8.8.8.8" > /etc/resolv.conf
+          echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+          echo "nameserver 114.114.114.114" >> /etc/resolv.conf
+          
+      - name: Install Miniconda
+        shell: bash
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda
+          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
+          conda init bash
+          source $HOME/.bashrc
+          
+      - name: Create conda environment
+        shell: bash
+        run: |
+          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
+          conda create -y -n argus python=3.10
+          conda activate argus
+          
+      - name: Deploy
+        shell: bash
+        run: |
+          eval "$($HOME/miniconda/bin/conda shell.bash hook)"
+          conda activate argus
+          cd argus-backend
+          python deploy.py 

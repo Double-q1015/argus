@@ -1,0 +1,356 @@
+:root {
+  /* 浅色主题变量 */
+  --el-bg-color: #ffffff;
+  --el-text-color-primary: #303133;
+  --el-text-color-regular: #606266;
+  --el-text-color-secondary: #909399;
+  --el-border-color: #dcdfe6;
+  --el-border-color-light: #e4e7ed;
+  --el-fill-color: #f5f7fa;
+}
+
+:root.dark {
+  /* 深色主题变量 */
+  --el-bg-color: #1f1f1f;
+  --el-text-color-primary: #ffffff;
+  --el-text-color-regular: #e5eaf3;
+  --el-text-color-secondary: #a3a6ad;
+  --el-border-color: #4c4d4f;
+  --el-border-color-light: #363637;
+  --el-fill-color: #262727;
+  
+  /* 覆盖 Element Plus 的深色主题 */
+  --el-color-primary: #409eff;
+  --el-color-success: #67c23a;
+  --el-color-warning: #e6a23c;
+  --el-color-danger: #f56c6c;
+  --el-color-info: #909399;
+  
+  /* 卡片背景 */
+  --el-card-bg-color: var(--el-bg-color);
+  
+  /* 菜单背景 */
+  --el-menu-bg-color: var(--el-bg-color);
+  --el-menu-hover-bg-color: var(--el-fill-color);
+  --el-menu-active-color: var(--el-color-primary);
+  
+  /* 下拉菜单背景 */
+  --el-dropdown-menu-bg-color: var(--el-bg-color);
+  --el-dropdown-menuItem-hover-fill: var(--el-fill-color);
+}
+
+/* 深色主题下的通用样式 */
+:root.dark {
+  background-color: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+}
+
+/* 卡片样式 */
+:root.dark .el-card {
+  background-color: var(--el-card-bg-color);
+  border-color: var(--el-border-color);
+  color: var(--el-text-color-primary);
+}
+
+/* 表格样式 */
+:root.dark .el-table {
+  background-color: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+}
+
+:root.dark .el-table th,
+:root.dark .el-table tr {
+  background-color: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+}
+
+:root.dark .el-table td {
+  border-color: var(--el-border-color);
+}
+
+:root.dark .el-table--striped .el-table__body tr.el-table__row--striped td {
+  background-color: var(--el-fill-color);
+}
+
+:root.dark .el-table--enable-row-hover .el-table__body tr:hover > td {
+  background-color: var(--el-fill-color);
+}
+
+/* 输入框样式 */
+:root.dark .el-input__wrapper {
+  background-color: var(--el-bg-color);
+  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+}
+
+:root.dark .el-input__inner {
+  background-color: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+}
+
+/* 按钮样式 */
+:root.dark .el-button {
+  background-color: var(--el-bg-color);
+  border-color: var(--el-border-color);
+  color: var(--el-text-color-primary);
+}
+
+:root.dark .el-button--primary {
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+  color: #ffffff;
+}
+
+:root.dark .el-button--text {
+  color: var(--el-color-primary);
+  background: transparent;
+  border-color: transparent;
+}
+
+/* 菜单样式 */
+:root.dark .el-menu {
+  background-color: var(--el-menu-bg-color);
+  border-color: var(--el-border-color);
+}
+
+:root.dark .el-menu-item {
+  color: var(--el-text-color-primary);
+}
+
+:root.dark .el-menu-item:hover {
+  background-color: var(--el-menu-hover-bg-color);
+}
+
+:root.dark .el-menu-item.is-active {
+  color: var(--el-menu-active-color);
+}
+
+/* 下拉菜单样式 */
+:root.dark .el-dropdown-menu {
+  background-color: var(--el-dropdown-menu-bg-color);
+  border-color: var(--el-border-color);
+}
+
+:root.dark .el-dropdown-menu__item {
+  color: var(--el-text-color-primary);
+}
+
+:root.dark .el-dropdown-menu__item:hover {
+  background-color: var(--el-dropdown-menuItem-hover-fill);
+}
+
+/* 单选框样式 */
+:root.dark .el-radio {
+  color: var(--el-text-color-regular);
+}
+
+:root.dark .el-radio__input.is-checked + .el-radio__label {
+  color: var(--el-color-primary);
+}
+
+/* 选择器样式 */
+:root.dark .el-select-dropdown {
+  background-color: var(--el-bg-color);
+  border-color: var(--el-border-color);
+}
+
+:root.dark .el-select-dropdown__item {
+  color: var(--el-text-color-regular);
+}
+
+:root.dark .el-select-dropdown__item.hover,
+:root.dark .el-select-dropdown__item:hover {
+  background-color: var(--el-fill-color);
+}
+
+:root.dark .el-select-dropdown__item.selected {
+  color: var(--el-color-primary);
+}
+
+/* 开关样式 */
+:root.dark .el-switch__core {
+  border-color: var(--el-border-color);
+  background-color: var(--el-border-color);
+}
+
+/* 表单样式 */
+:root.dark .el-form-item__label {
+  color: var(--el-text-color-regular);
+}
+
+/* 标签样式 */
+:root.dark .el-tag {
+  background-color: var(--el-fill-color);
+  border-color: var(--el-border-color);
+  color: var(--el-text-color-regular);
+}
+
+/* 时间线样式 */
+:root.dark .el-timeline-item__node {
+  background-color: var(--el-color-primary);
+}
+
+:root.dark .el-timeline-item__content {
+  color: var(--el-text-color-regular);
+}
+
+:root.dark .el-timeline-item__timestamp {
+  color: var(--el-text-color-secondary);
+}
+
+/* 页头样式 */
+:root.dark .el-header {
+  background-color: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color);
+}
+
+/* 页脚样式 */
+:root.dark .el-footer {
+  background-color: var(--el-bg-color);
+  border-top: 1px solid var(--el-border-color);
+}
+
+/* 主要内容区域样式 */
+:root.dark .el-main {
+  background-color: var(--el-bg-color);
+}
+
+/* 分割线样式 */
+:root.dark .el-divider {
+  background-color: var(--el-border-color);
+}
+
+:root.dark .el-divider__text {
+  background-color: var(--el-bg-color);
+  color: var(--el-text-color-secondary);
+}
+
+/* 高亮元素样式 */
+:root.dark .sk-check-for-highlights {
+  background-color: var(--el-bg-color) !important;
+}
+
+:root.dark .is-always-shadow {
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+:root.dark .is-guttered {
+  background-color: var(--el-bg-color) !important;
+}
+
+:root.dark .el-card__body {
+  background-color: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+}
+
+:root.dark .el-card__header {
+  background-color: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color);
+}
+
+:root.dark .layout-container {
+  background-color: var(--el-bg-color);
+}
+
+:root.dark .el-container {
+  background-color: var(--el-bg-color);
+}
+
+/* 修复布局容器样式 */
+:root.dark .is-vertical {
+  background-color: var(--el-bg-color);
+}
+
+:root.dark .layout-container {
+  background-color: var(--el-bg-color);
+}
+
+/* 修复卡片内容区域样式 */
+:root.dark .el-card_body {
+  background-color: var(--el-bg-color);
+}
+
+:root.dark .el-card_header {
+  background-color: var(--el-bg-color);
+}
+
+/* 修复表格样式 */
+:root.dark .el-table {
+  --el-table-border-color: var(--el-border-color);
+  --el-table-header-bg-color: var(--el-bg-color);
+  --el-table-row-hover-bg-color: var(--el-fill-color);
+  --el-table-current-row-bg-color: var(--el-fill-color);
+  background-color: var(--el-bg-color);
+}
+
+:root.dark .el-table th.el-table__cell {
+  background-color: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color);
+}
+
+:root.dark .el-table .el-table__cell {
+  background-color: var(--el-bg-color);
+}
+
+:root.dark .el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell {
+  background-color: var(--el-fill-color);
+}
+
+/* 修复下拉菜单样式 */
+:root.dark .el-dropdown-menu {
+  background-color: var(--el-bg-color);
+  border: 1px solid var(--el-border-color);
+}
+
+:root.dark .el-dropdown-menu__item:not(.is-disabled):hover {
+  background-color: var(--el-fill-color);
+}
+
+/* 修复弹出层样式 */
+:root.dark .el-popper {
+  background-color: var(--el-bg-color);
+  border: 1px solid var(--el-border-color);
+}
+
+:root.dark .el-popper__arrow::before {
+  background-color: var(--el-bg-color);
+  border: 1px solid var(--el-border-color);
+}
+
+/* 修复滚动条样式 */
+:root.dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+:root.dark ::-webkit-scrollbar-thumb {
+  background-color: var(--el-border-color);
+  border-radius: 3px;
+}
+
+:root.dark ::-webkit-scrollbar-track {
+  background-color: var(--el-fill-color);
+}
+
+/* 修复文本选择样式 */
+:root.dark ::selection {
+  background-color: var(--el-color-primary-light-5);
+  color: var(--el-text-color-primary);
+}
+
+/* 修复全局背景色 */
+:root.dark body {
+  background-color: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+}
+
+/* 修复布局容器样式 */
+:root.dark .el-container.is-vertical {
+  background-color: var(--el-bg-color);
+  min-height: 100vh;
+}
+
+/* 修复页面容器样式 */
+:root.dark #app {
+  background-color: var(--el-bg-color);
+  min-height: 100vh;
+} 
