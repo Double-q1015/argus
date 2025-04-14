@@ -132,7 +132,7 @@ TODO:
     * argus-backend/app/core/config.py
 * 3、使用Dockerfile编译镜像
     ```docker
-    docker run -d --name argus-container argus-latest
+    docker build -t argus-latest .
     ```
     **Tips**: `argus-backend/Dockerfile`中配置了代理，你可以改为自己的代理，也可以注释掉
 * 4、使用编译好的镜像启动一个容器
