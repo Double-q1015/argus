@@ -1,5 +1,22 @@
 # argus
-Argus is a malware analysis platform built with Vue 3 and Python
+Argus是一个开源的样本静态及动态信息收集平台
+* 基于容器可以快速搭建环境及动态扩容
+* 基于对象存储的样本及样本衍生物存储可以实现文件的冗余备份和轻松扩容存储空间。
+
+**本项目是站在巨人的肩膀上，参考了很多类似的知名项目，如果下面列出的这些项目可以满足您的使用需求，建议优先使用这些知名项目。**
+
+* Assemblyline AssemblyLine的可扩展性非常强
+    ```
+    AssemblyLine 4 是一个开源恶意软件分析框架。它利用 Kubernetes 和 Docker 来适应多种用例；从支持手动恶意软件分析和安全团队的小型设备，到每天扫描数百万个文件并提供分类功能的大型企业安全运营
+    ```
+* Strelka Strelka支持多种文件格式的解析分析能力
+    ```
+    Strelka 是一个基于容器的实时文件扫描系统，用于威胁搜寻、威胁检测和事件响应。
+    ```
+* CAPEv2 CAPEv2是出色的开源沙箱
+    ```
+    CAPEv2用于在隔离环境中执行恶意文件，同时检测其动态行为并收集法医证据
+    ```
 
 ## 系统依赖
 * strings相关
@@ -19,6 +36,10 @@ apt install libimage-exiftool-perl
 
 * yara相关
 apt-get install yara
+
+## 相关项目
+* 1、[CAPEv2](https://github.com/kevoreilly/CAPEv2) CAPEv2是一个沙箱
+* 2、[Strelka](https://github.com/target/strelka/) Strelka 是一个基于容器的实时文件扫描系统，用于威胁搜寻、威胁检测和事件响应。
 
 ## 页面简介
 ### 认证模块

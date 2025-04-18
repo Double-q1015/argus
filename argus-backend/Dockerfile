@@ -11,10 +11,6 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# 设置DNS
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
-RUN echo "nameserver 114.114.114.114" >> /etc/resolv.conf
-
 # 设置代理
 ENV http_proxy=http://192.168.2.2:7890
 ENV https_proxy=http://192.168.2.2:7890

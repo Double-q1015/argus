@@ -12,7 +12,7 @@ from app.core.storage import init_storage
 from app.db.init_db import init_db, init_system_user
 from app.api.v1.api import api_router
 from app.core.scheduler import start_scheduler, stop_scheduler
-
+from app.common.logo import logo
 # 确保日志目录存在
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 log_dir = os.path.join(BASE_DIR, "logs")
@@ -65,6 +65,7 @@ async def startup_event():
     应用启动时初始化数据库连接和存储服务
     """
     try:
+        logo()
         await init_db()
         logger.info("Successfully connected to MongoDB")
 

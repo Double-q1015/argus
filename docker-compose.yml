@@ -33,6 +33,36 @@ services:
       timeout: 10s
       retries: 3
 
+  argus-frontend:
+    build: 
+      context: ./argus-vue
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - argus-backend
+    networks:
+      - argus-network
+
+  argus-backend:
+    build: 
+      context: ./argus-backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+      - minio
+    environment:
+      - MONGODB_URL=mongodb://admin:admin123@mongodb:27017/
+      - MINIO_ENDPOINT=minio:9000
+    networks:
+      - argus-network
+
+networks:
+  argus-network:
+    driver: bridge
+
 volumes:
   minio_data:
   mongodb_data: 
