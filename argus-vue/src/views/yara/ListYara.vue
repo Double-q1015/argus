@@ -3,28 +3,28 @@
     <el-card class="yara-card">
       <template #header>
         <div class="card-header">
-          <h2>Yara规则列表</h2>
-          <el-button type="primary" @click="createRule">创建规则</el-button>
+          <h2>{{ $t('yara.list.title') }}</h2>
+          <el-button type="primary" @click="createRule">{{ $t('yara.list.createButton') }}</el-button>
         </div>
       </template>
       
       <el-table :data="rules" style="width: 100%" v-loading="loading">
-        <el-table-column prop="name" label="规则名称" width="180" />
-        <el-table-column prop="description" label="描述" />
-        <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="name" :label="$t('yara.list.table.name')" width="180" />
+        <el-table-column prop="description" :label="$t('yara.list.table.description')" />
+        <el-table-column prop="createTime" :label="$t('yara.list.table.createTime')" width="180" />
+        <el-table-column prop="status" :label="$t('yara.list.table.status')" width="100">
           <template #default="scope">
             <el-tag :type="scope.row.status === 'active' ? 'success' : 'info'">
-              {{ scope.row.status === 'active' ? '启用' : '禁用' }}
+              {{ scope.row.status === 'active' ? $t('yara.list.status.active') : $t('yara.list.status.inactive') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column :label="$t('yara.list.table.actions')" width="200" fixed="right">
           <template #default="scope">
             <el-button-group>
-              <el-button size="small" @click="viewRule(scope.row)">查看</el-button>
-              <el-button size="small" type="primary" @click="editRule(scope.row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="deleteRule(scope.row)">删除</el-button>
+              <el-button size="small" @click="viewRule(scope.row)">{{ $t('yara.list.table.view') }}</el-button>
+              <el-button size="small" type="primary" @click="editRule(scope.row)">{{ $t('yara.list.table.edit') }}</el-button>
+              <el-button size="small" type="danger" @click="deleteRule(scope.row)">{{ $t('yara.list.table.delete') }}</el-button>
             </el-button-group>
           </template>
         </el-table-column>
@@ -46,7 +46,7 @@
     <!-- 查看规则对话框 -->
     <el-dialog
       v-model="viewDialogVisible"
-      title="查看规则"
+      :title="$t('yara.list.dialog.viewTitle')"
       width="60%"
     >
       <pre class="rule-content">{{ selectedRule?.content }}</pre>
@@ -60,7 +60,9 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { yaraApi } from '@/api/yara'
 import type { YaraRule } from '@/api/yara'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const router = useRouter()
 const loading = ref(false)
 const currentPage = ref(1)
@@ -75,10 +77,9 @@ const loadRules = async () => {
   try {
     const skip = (currentPage.value - 1) * pageSize.value
     const response = await yaraApi.getRules({ skip, limit: pageSize.value })
-    console.log(response)
     rules.value = response.data
   } catch (error: any) {
-    ElMessage.error('加载规则列表失败')
+    ElMessage.error(t('yara.list.message.loadError'))
   } finally {
     loading.value = false
   }
@@ -94,28 +95,27 @@ const viewRule = (rule: YaraRule) => {
 }
 
 const editRule = async (rule: YaraRule) => {
-  // TODO: 实现编辑功能
   router.push(`/yara/edit/${rule.id}`)
 }
 
 const deleteRule = async (rule: YaraRule) => {
   try {
     await ElMessageBox.confirm(
-      '确定要删除该规则吗？',
-      '警告',
+      t('yara.list.confirm.deleteMessage'),
+      t('yara.list.confirm.deleteTitle'),
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: t('yara.list.confirm.confirmButton'),
+        cancelButtonText: t('yara.list.confirm.cancelButton'),
         type: 'warning',
       }
     )
     
     await yaraApi.deleteRule(rule.id)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('yara.list.message.deleteSuccess'))
     await loadRules()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error('删除规则失败')
+      ElMessage.error(t('yara.list.message.deleteError'))
     }
   }
 }

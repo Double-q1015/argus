@@ -14,13 +14,16 @@
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
     "@element-plus/icons-vue": "^2.3.1",
+    "@tanstack/vue-query": "^5.74.5",
     "@vueuse/core": "^10.7.0",
     "antd": "^5.24.5",
     "axios": "^1.8.4",
+    "echarts": "^5.6.0",
     "element-plus": "^2.9.7",
     "lucide-vue-next": "^0.487.0",
     "pinia": "^2.3.1",
     "vue": "^3.3.11",
+    "vue-i18n": "^12.0.0-alpha.2",
     "vue-router": "^4.2.5"
   },
   "devDependencies": {

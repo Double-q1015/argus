@@ -1,70 +1,36 @@
 <template>
   <div class="home-container">
     <el-row :gutter="20">
-      <el-col :span="6">
-        <el-card class="stat-card">
-          <template #header>
-            <div class="card-header">
-              <span>总样本数</span>
-              <el-button class="button" text>
-                <el-icon><Document /></el-icon>
-              </el-button>
-            </div>
-          </template>
-          <div class="stat-value">{{ stats.total_samples }}</div>
-        </el-card>
-      </el-col>
-      
-      <el-col :span="6">
-        <el-card class="stat-card">
-          <template #header>
-            <div class="card-header">
-              <span>今日新增</span>
-              <el-button class="button" text>
-                <el-icon><Plus /></el-icon>
-              </el-button>
-            </div>
-          </template>
-          <div class="stat-value">{{ stats.today_samples }}</div>
-        </el-card>
-      </el-col>
-      
-      <el-col :span="6">
-        <el-card class="stat-card">
-          <template #header>
-            <div class="card-header">
-              <span>总存储量</span>
-              <el-button class="button" text>
-                <el-icon><FolderOpened /></el-icon>
-              </el-button>
-            </div>
-          </template>
-          <div class="stat-value">{{ formatBytes(stats.total_storage) }}</div>
-        </el-card>
-      </el-col>
-      
-      <el-col :span="6">
-        <el-card class="stat-card">
-          <template #header>
-            <div class="card-header">
-              <span>活跃用户</span>
-              <el-button class="button" text>
-                <el-icon><User /></el-icon>
-              </el-button>
-            </div>
-          </template>
-          <div class="stat-value">{{ stats.active_users }}</div>
+      <el-col :span="6" v-for="(stat, index) in stats" :key="index">
+        <el-card shadow="hover" class="stat-card" :body-style="{ padding: '20px' }">
+          <div class="stat-icon">
+            <el-icon :size="40" :color="getIconColor(stat.key)">
+              <component :is="getIcon(stat.key)" />
+            </el-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ formatStatValue(stat) }}</div>
+            <div class="stat-label">{{ $t(`home.stats.${stat.key}`) }}</div>
+          </div>
         </el-card>
       </el-col>
     </el-row>
-    
+    <!-- add upload and chart card -->
+    <el-row :gutter="20" class="mt-4">
+      <el-col :span="8">
+        <FileUploader />
+      </el-col>
+      <el-col :span="16">
+        <StatsChart />
+      </el-col>
+    </el-row>
     <el-row :gutter="20" class="mt-4">
       <el-col :span="24">
-        <el-card>
+        <el-card class="recent-samples" shadow="hover">
           <template #header>
             <div class="card-header">
-              <span>最近添加的样本</span>
-              <el-button class="button" text>查看全部</el-button>
+              <span>{{ $t('home.recentSamples.title') }}</span>
+              <el-button type="text">{{ $t('home.recentSamples.viewAll') }}</el-button>
             </div>
           </template>
           <el-table
@@ -75,7 +41,7 @@
           >
             <el-table-column
               prop="sha256_digest"
-              label="SHA256摘要"
+              :label="$t('home.recentSamples.table.sha256')"
               width="280"
             >
               <template #default="{ row }">
@@ -84,7 +50,7 @@
             </el-table-column>
             <el-table-column
               prop="upload_time"
-              label="时间"
+              :label="$t('home.recentSamples.table.time')"
               width="180"
             >
               <template #default="{ row }">
@@ -93,19 +59,18 @@
             </el-table-column>
             <el-table-column
               prop="file_name"
-              label="名称"
+              :label="$t('home.recentSamples.table.name')"
             />
             <el-table-column
               prop="tags"
-              label="标签"
+              :label="$t('home.recentSamples.table.tags')"
             >
               <template #default="{ row }">
                 <el-tag
                   v-for="tag in row.tags"
                   :key="tag"
                   size="small"
-                  class="mx-1"
-                  style="margin-right: 4px"
+                  class="tag mx-1"
                 >
                   {{ tag }}
                 </el-tag>
@@ -119,20 +84,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { getRecentSamples, getDashboardStats, type DashboardStats, type RecentSample } from '@/api/home'
-import { formatDate, formatBytes } from '@/utils/format'
 import { Document, Plus, FolderOpened, User } from '@element-plus/icons-vue'
+import { getRecentSamples, getDashboardStats, type DashboardStats, type RecentSample } from '@/api/home'
+import { formatDate } from '@/utils/format'
+import FileUploader from '@/components/home/FileUpload.vue'
+import StatsChart from '@/components/home/StatsChart.vue'
+
+const { t } = useI18n()
 
 const recentSamples = ref<RecentSample[]>([])
 const loading = ref(false)
-const stats = ref<DashboardStats>({
+const rawStats = ref<DashboardStats>({
   total_samples: 0,
   today_samples: 0,
   total_storage: 0,
   active_users: 0
 })
+
+const stats = computed(() => [
+  { key: 'totalSamples', value: rawStats.value.total_samples },
+  { key: 'todaySamples', value: rawStats.value.today_samples },
+  { key: 'totalStorage', value: rawStats.value.total_storage },
+  { key: 'activeUsers', value: rawStats.value.active_users }
+])
+
+const formatStatValue = (stat: { key: string; value: any }) => {
+  if (stat.key === 'totalStorage') {
+    return formatBytes(stat.value)
+  }
+  return stat.value
+}
+
+const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
 
 const fetchData = async () => {
   loading.value = true
@@ -142,10 +134,9 @@ const fetchData = async () => {
       getDashboardStats()
     ])
     recentSamples.value = samplesData.data
-    stats.value = statsData.data
+    rawStats.value = statsData.data
   } catch (error) {
-    console.error('获取数据失败:', error)
-    ElMessage.error('获取数据失败')
+    ElMessage.error(t('home.message.loadError'))
   } finally {
     loading.value = false
   }
@@ -154,6 +145,26 @@ const fetchData = async () => {
 onMounted(() => {
   fetchData()
 })
+
+const getIcon = (key: string) => {
+  const icons = {
+    totalSamples: Document,
+    todaySamples: Plus,
+    totalStorage: FolderOpened,
+    activeUsers: User
+  }
+  return icons[key as keyof typeof icons]
+}
+
+const getIconColor = (key: string) => {
+  const colors = {
+    totalSamples: '#409EFF',
+    todaySamples: '#67C23A',
+    totalStorage: '#E6A23C',
+    activeUsers: '#F56C6C'
+  }
+  return colors[key as keyof typeof colors]
+}
 </script>
 
 <style scoped>
@@ -164,19 +175,38 @@ onMounted(() => {
 }
 
 .stat-card {
-  .stat-value {
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--el-color-primary);
-    text-align: center;
-    margin-top: 10px;
-  }
+  transition: all 0.3s;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.card-header {
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.stat-content {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--el-text-color-primary);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.4;
 }
 
 .mt-4 {
@@ -187,36 +217,22 @@ onMounted(() => {
   margin: 0 4px;
 }
 
-.announcement {
-  margin-bottom: 15px;
-  
-  h4 {
-    margin: 0 0 10px 0;
-    color: var(--el-text-color-primary);
-  }
-  
-  p {
-    margin: 0;
-    color: var(--el-text-color-regular);
-  }
-  
-  .announcement-time {
-    margin-top: 5px;
-    font-size: 12px;
-    color: var(--el-text-color-secondary);
-  }
-}
-
-.el-divider {
-  margin: 15px 0;
-  background-color: var(--el-border-color);
-}
-
 .monospace {
   font-family: monospace;
 }
 
-h2 {
-  margin-bottom: 20px;
+.recent-samples {
+  margin-top: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tag {
+  margin-right: 5px;
+  margin-bottom: 5px;
 }
 </style> 

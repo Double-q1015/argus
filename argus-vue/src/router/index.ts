@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Layout from '@/layouts/Layout.vue'
 import Login from '@/views/Login.vue'
 import Home from '@/views/Home.vue'
-import Dashboard from '@/views/Dashboard.vue'
 import Settings from '@/views/Settings.vue'
 import CreateYara from '@/views/yara/CreateYara.vue'
 import ListYara from '@/views/yara/ListYara.vue'
@@ -36,11 +35,6 @@ const router = createRouter({
           path: 'search',
           name: 'Search',
           component: Search
-        },
-        {
-          path: 'dashboard',
-          name: 'Dashboard',
-          component: Dashboard
         },
         {
           path: 'analysis',

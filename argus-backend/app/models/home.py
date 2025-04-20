@@ -12,4 +12,8 @@ class RecentSample(BaseModel):
     sha256_digest: str
     file_name: str
     upload_time: datetime
-    tags: List[str] 
+    tags: List[str]
+
+class MimeTypeStat(BaseModel):
+    mime_type: str
+    count: int

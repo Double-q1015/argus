@@ -3,7 +3,7 @@
     <el-card class="analysis-card">
       <template #header>
         <div class="card-header">
-          <h2>文件分析</h2>
+          <h2>{{ $t('analysis.title') }}</h2>
         </div>
       </template>
 
@@ -17,9 +17,9 @@
         <div class="drop-content" v-if="!files.length">
           <el-icon class="upload-icon"><Upload /></el-icon>
           <div class="upload-text">
-            <h3>拖放文件到此处进行分析</h3>
-            <p>支持Windows PE可执行文件和所有文件类型</p>
-            <p>最多10个文件，每个文件限制10MB</p>
+            <h3>{{ $t('analysis.dropZone.title') }}</h3>
+            <p>{{ $t('analysis.dropZone.description1') }}</p>
+            <p>{{ $t('analysis.dropZone.description2') }}</p>
           </div>
         </div>
         
@@ -43,9 +43,9 @@
           
           <div class="upload-actions" v-if="files.length">
             <el-button type="primary" @click="startAnalysis" :loading="uploading">
-              开始分析
+              {{ $t('analysis.fileList.startAnalysis') }}
             </el-button>
-            <el-button @click="clearFiles">清空列表</el-button>
+            <el-button @click="clearFiles">{{ $t('analysis.fileList.clearList') }}</el-button>
           </div>
         </div>
       </div>
@@ -58,7 +58,9 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Upload, Document, Delete } from '@element-plus/icons-vue'
 import { analysisApi } from '@/api/analysis'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const MAX_FILES = 10
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
@@ -80,14 +82,14 @@ const handleDrop = (e: DragEvent) => {
   
   // 检查文件数量限制
   if (files.value.length + droppedFiles.length > MAX_FILES) {
-    ElMessage.warning(`最多只能上传${MAX_FILES}个文件`)
+    ElMessage.warning(t('analysis.message.maxFiles', { count: MAX_FILES }))
     return
   }
   
   // 检查文件大小
   const invalidFiles = droppedFiles.filter(file => file.size > MAX_FILE_SIZE)
   if (invalidFiles.length) {
-    ElMessage.warning(`以下文件超过大小限制(10MB)：${invalidFiles.map(f => f.name).join(', ')}`)
+    ElMessage.warning(t('analysis.message.maxFileSize', { files: invalidFiles.map(f => f.name).join(', ') }))
     return
   }
   
@@ -112,7 +114,7 @@ const formatFileSize = (bytes: number) => {
 
 const startAnalysis = async () => {
   if (!files.value.length) {
-    ElMessage.warning('请先添加文件')
+    ElMessage.warning(t('analysis.message.noFiles'))
     return
   }
   
@@ -125,14 +127,14 @@ const startAnalysis = async () => {
     const errorCount = response.data.results.filter(r => r.status === 'error').length
     
     if (errorCount > 0) {
-      ElMessage.warning(`分析完成，${successCount}个成功，${errorCount}个失败`)
+      ElMessage.warning(t('analysis.message.analysisPartial', { success: successCount, error: errorCount }))
     } else {
-      ElMessage.success('所有文件分析成功')
+      ElMessage.success(t('analysis.message.analysisSuccess'))
     }
     
     clearFiles()
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.detail || '分析失败，请重试')
+    ElMessage.error(error.response?.data?.detail || t('analysis.message.analysisError'))
   } finally {
     uploading.value = false
   }

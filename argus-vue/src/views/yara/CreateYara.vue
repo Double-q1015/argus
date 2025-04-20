@@ -3,37 +3,37 @@
     <el-card class="yara-card">
       <template #header>
         <div class="card-header">
-          <h2>创建Yara规则</h2>
+          <h2>{{ $t('yara.create.title') }}</h2>
         </div>
       </template>
       
-      <el-form :model="yaraForm" :rules="rules" ref="yaraFormRef" label-width="120px">
-        <el-form-item label="规则名称" prop="name">
-          <el-input v-model="yaraForm.name" placeholder="请输入规则名称"></el-input>
+      <el-form :model="yaraForm" :rules="rules" ref="yaraFormRef" label-width="200px">
+        <el-form-item :label="$t('yara.create.name')" label-position="right">
+          <el-input v-model="yaraForm.name" :placeholder="$t('yara.create.namePlaceholder')"></el-input>
         </el-form-item>
         
-        <el-form-item label="规则描述" prop="description">
+        <el-form-item :label="$t('yara.create.description')" label-position="right">
           <el-input
             v-model="yaraForm.description"
             type="textarea"
             :rows="3"
-            placeholder="请输入规则描述"
+            :placeholder="$t('yara.create.descriptionPlaceholder')"
           ></el-input>
         </el-form-item>
         
-        <el-form-item label="规则内容" prop="content">
+        <el-form-item :label="$t('yara.create.content')" label-position="right">
           <el-input
             v-model="yaraForm.content"
             type="textarea"
             :rows="10"
-            placeholder="请输入Yara规则内容"
+            :placeholder="$t('yara.create.contentPlaceholder')"
             class="yara-content"
           ></el-input>
         </el-form-item>
         
         <el-form-item>
-          <el-button type="primary" @click="submitForm">创建规则</el-button>
-          <el-button @click="resetForm">重置</el-button>
+          <el-button type="primary" @click="submitForm">{{ $t('yara.create.submit') }}</el-button>
+          <el-button @click="resetForm">{{ $t('yara.create.reset') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -46,7 +46,9 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { yaraApi } from '@/api/yara'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const router = useRouter()
 const yaraFormRef = ref<FormInstance>()
 const yaraForm = reactive({
@@ -57,14 +59,14 @@ const yaraForm = reactive({
 
 const rules = reactive<FormRules>({
   name: [
-    { required: true, message: '请输入规则名称', trigger: 'blur' },
-    { min: 3, max: 50, message: '长度在 3 到 50 个字符', trigger: 'blur' }
+    { required: true, message: t('yara.create.nameRules.required'), trigger: 'blur' },
+    { min: 3, max: 50, message: t('yara.create.nameRules.length'), trigger: 'blur' }
   ],
   description: [
-    { required: true, message: '请输入规则描述', trigger: 'blur' }
+    { required: true, message: t('yara.create.descriptionRules.required'), trigger: 'blur' }
   ],
   content: [
-    { required: true, message: '请输入规则内容', trigger: 'blur' }
+    { required: true, message: t('yara.create.contentRules.required'), trigger: 'blur' }
   ]
 })
 
@@ -75,10 +77,10 @@ const submitForm = async () => {
     if (valid) {
       try {
         await yaraApi.createRule(yaraForm)
-        ElMessage.success('规则创建成功')
+        ElMessage.success(t('yara.create.success'))
         router.push('/yara/list')
       } catch (error: any) {
-        ElMessage.error(error.response?.data?.detail || '创建规则失败')
+        ElMessage.error(error.response?.data?.detail || t('yara.create.error'))
       }
     }
   })
@@ -95,11 +97,6 @@ const resetForm = () => {
   padding: 20px;
   height: 100%;
   background-color: var(--el-bg-color);
-}
-
-.yara-card {
-  max-width: 1000px;
-  margin: 0 auto;
 }
 
 .card-header {

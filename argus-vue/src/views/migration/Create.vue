@@ -1,8 +1,8 @@
 <template>
   <div class="migration-create">
     <div class="header">
-      <h1>创建迁移任务</h1>
-      <el-button @click="$router.push('/migration')">返回</el-button>
+      <h1>{{ $t('migration.create.title') }}</h1>
+      <el-button @click="$router.push('/migration')">{{ $t('migration.create.back') }}</el-button>
     </div>
     
     <div class="form-container">
@@ -12,21 +12,23 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import TaskForm from '@/components/migration/TaskForm.vue'
 import { createMigrationTask } from '@/api/migration'
 import type { MigrationTaskCreate } from '@/types/migration'
 
+const { t } = useI18n()
 const router = useRouter()
 
 const handleSubmit = async (data: MigrationTaskCreate) => {
   try {
     await createMigrationTask(data)
-    ElMessage.success('创建迁移任务成功')
+    ElMessage.success(t('migration.create.success'))
     router.push('/migration')
   } catch (error) {
-    ElMessage.error('创建迁移任务失败')
+    ElMessage.error(t('migration.create.error'))
   }
 }
 </script>

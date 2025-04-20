@@ -11,6 +11,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
+  optimizeDeps: {
+    include: ['@tanstack/vue-query']
+  },
   server: {
     host: '0.0.0.0',
     proxy: {
