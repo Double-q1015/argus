@@ -3,6 +3,7 @@ version: '3.8'
 services:
   minio:
     image: minio/minio:latest
+    container_name: minio
     ports:
       - "9000:9000"      # API 端口
       - "9001:9001"      # Console 端口
@@ -11,7 +12,7 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
       - minio_data:/data
-    command: server --console-address ":9001" /data
+    command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -20,11 +21,12 @@ services:
 
   mongodb:
     image: mongo:latest
+    container_name: mongodb
     ports:
       - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_ROOT_PASSWORD: password123
     volumes:
       - mongodb_data:/data/db
     healthcheck:
@@ -54,7 +56,7 @@ services:
       - mongodb
       - minio
     environment:
-      - MONGODB_URL=mongodb://admin:admin123@mongodb:27017/
+      - MONGODB_URL=mongodb://admin:password123@mongodb:27017/argus?authSource=admin
       - MINIO_ENDPOINT=minio:9000
     networks:
       - argus-network

@@ -5,6 +5,10 @@ from tqdm import tqdm
 import logging
 from typing import Optional
 
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app.core.config import settings
+
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
@@ -14,9 +18,9 @@ logger = logging.getLogger(__name__)
 
 # 配置
 SAMPLE_DIR = "/data/Virusshare.00481"
-API_BASE_URL = "http://localhost:8000/api/v1"
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "Admin123!@#"
+API_BASE_URL = f"http://127.0.0.1:8000{settings.API_V1_STR}"
+ADMIN_USERNAME = settings.SYSTEM_USER
+ADMIN_PASSWORD = settings.SYSTEM_USER_PASSWORD
 
 async def get_access_token(session: aiohttp.ClientSession) -> Optional[str]:
     """获取访问令牌"""

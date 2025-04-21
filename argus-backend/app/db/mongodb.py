@@ -26,19 +26,19 @@ class MongoDBManager:
 
     async def close(self):
         """关闭数据库连接"""
-        if self._client:
+        if self._client is not None:
             self._client.close()
             logger.info("MongoDB connection closed")
 
     @property
     def client(self):
-        if not self._client:
+        if self._client is None:
             raise RuntimeError("MongoDB client not initialized")
         return self._client
 
     @property
     def db(self):
-        if not self._db:
+        if self._db is None:
             raise RuntimeError("MongoDB database not initialized")
         return self._db
 
@@ -55,7 +55,7 @@ async def get_database() -> AsyncIOMotorDatabase:
         return items
     """
     try:
-        if not db_manager._client:
+        if db_manager._client is None:
             await db_manager.connect()
         return db_manager.db
     except Exception as e:
@@ -72,7 +72,7 @@ async def get_client() -> AsyncIOMotorClient:
         return status
     """
     try:
-        if not db_manager._client:
+        if db_manager._client is None:
             await db_manager.connect()
         return db_manager.client
     except Exception as e:
@@ -88,7 +88,7 @@ async def get_db() -> AsyncGenerator:
         result = await db.collection.find_one()
     """
     try:
-        if not db_manager._client:
+        if db_manager._client is None:
             await db_manager.connect()
         yield db_manager.db
     except Exception as e:

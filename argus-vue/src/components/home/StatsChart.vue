@@ -26,6 +26,24 @@ let chart: echarts.ECharts | null = null
 const stats = useStatsCharts().data
 console.log(stats)
 
+// Predefined color array (10 colors)
+const colors = [
+  '#FF6B6B',  // Coral red
+  '#4ECDC4',  // Emerald green
+  '#45B7D1',  // Sky blue
+  '#96CEB4',  // Mint green
+  '#FFEEAD',  // Wheat yellow
+  '#D4A5A5',  // Rose pink
+  '#6C5B7B',  // Deep purple
+  '#FFB347',  // Orange
+  '#87CEEB',  // Sky blue
+  '#98FB98'   // Light green
+]
+
+const getRandomColor = (index: number): string => {
+  return colors[index % colors.length]
+}
+
 const initChart = () => {
   if (!chartRef.value) return
   chart = echarts.init(chartRef.value)
@@ -44,10 +62,15 @@ const updateChart = () => {
         type: 'shadow'
       }
     },
+    legend: {
+      bottom: '0%',
+      left: 'center',
+      data: ['文件数量']
+    },
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '10%',
       containLabel: true
     },
     xAxis: {
@@ -62,7 +85,13 @@ const updateChart = () => {
       type: 'value'
     },
     series: [{
-      data: mimeTypeStats.map(item => item.count),
+      name: '文件数量',
+      data: mimeTypeStats.map((item, index) => ({
+        value: item.count,
+        itemStyle: {
+          color: getRandomColor(index)
+        }
+      })),
       type: 'bar',
       showBackground: true,
       backgroundStyle: {
@@ -74,7 +103,7 @@ const updateChart = () => {
   chart.setOption(option)
 }
 
-// 监听数据变化
+// Listen to data changes
 watch(() => stats.value, () => {
   if (chart) {
     updateChart()

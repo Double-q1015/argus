@@ -24,6 +24,12 @@
         <StatsChart />
       </el-col>
     </el-row>
+    <!-- add quick upload card -->
+    <el-row :gutter="20" class="mt-4">
+      <el-col :span="24">
+        <QuickUpload />
+      </el-col>
+    </el-row>
     <el-row :gutter="20" class="mt-4">
       <el-col :span="24">
         <el-card class="recent-samples" shadow="hover">
@@ -92,7 +98,7 @@ import { getRecentSamples, getDashboardStats, type DashboardStats, type RecentSa
 import { formatDate } from '@/utils/format'
 import FileUploader from '@/components/home/FileUpload.vue'
 import StatsChart from '@/components/home/StatsChart.vue'
-
+import QuickUpload from '@/components/home/QuickUpload.vue'
 const { t } = useI18n()
 
 const recentSamples = ref<RecentSample[]>([])

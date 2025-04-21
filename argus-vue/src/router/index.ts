@@ -97,6 +97,14 @@ const router = createRouter({
           component: () => import('@/views/migration/Detail.vue')
         }
       ]
+    },
+    {
+      path: '/demo/pe-overview',
+      name: 'PeOverviewDemo',
+      component: () => import('@/components/FileOverviews/PeOverview/demo.vue'),
+      meta: {
+        title: 'PE Overview Demo'
+      }
     }
   ]
 })
